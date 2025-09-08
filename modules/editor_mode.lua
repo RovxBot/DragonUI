@@ -345,10 +345,6 @@ local function makeFrameMovable(frame, config)
                 setDbValue(config.dbPath, config.yKey, y)
             end
 
-            -- Don't call refresh immediately to prevent position jumping
-            -- The position is already set by the drag operation
-            print("Stance bar position saved: " .. math.floor(x) .. ", " .. math.floor(y))
-
         else
             -- === LÓGICA GENÉRICA PARA TODOS LOS DEMÁS FRAMES ===
             local x, y
@@ -389,7 +385,7 @@ end
 -- FUNCIONES PÚBLICAS (Show, Hide, Toggle)
 -- =================================================================
 function EditorMode:Show()
-    if InCombatLockdown() then print("[DragonUI] Cannot enter editor mode while in combat!"); return; end
+    if InCombatLockdown() then return; end
     isEditorActive = true;
     local frameCount = 0;
 
