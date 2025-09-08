@@ -74,33 +74,109 @@ local function UpdateGryphonStyle()
     end
 end
 
+-- =========================================================================
+-- ✅ ACTION BAR LAYOUT SYSTEM
+-- =========================================================================
+
+-- Calculate frame size needed for a given layout
+local function CalculateFrameSize(rows, columns)
+    local buttonSize = 37
+    local spacing = 7
+    local padding = 4
+
+    local width = (buttonSize * columns) + (spacing * (columns - 1)) + padding
+    local height = (buttonSize * rows) + (spacing * (rows - 1)) + padding
+
+    return width, height
+end
+
+-- Arrange action bar buttons in a grid layout
+function addon.ArrangeActionBarButtons(buttonPrefix, parentFrame, anchorFrame, rows, columns, buttonsShown)
+    if InCombatLockdown() then return end
+
+    local buttonSize = 37
+    local spacing = 7
+    local startX = 2
+    local startY = 2
+
+    -- Arrange buttons in grid
+    for index = 1, NUM_ACTIONBAR_BUTTONS do
+        local button = _G[buttonPrefix .. index]
+        if button then
+            button:SetParent(parentFrame)
+
+            if index <= buttonsShown then
+                -- Calculate grid position (0-based for math)
+                local gridIndex = index - 1
+                local row = math.floor(gridIndex / columns)
+                local col = gridIndex % columns
+
+                -- Calculate pixel position
+                local x = startX + (col * (buttonSize + spacing))
+                local y = startY + (row * (buttonSize + spacing))
+
+                button:SetClearPoint('BOTTOMLEFT', anchorFrame, 'BOTTOMLEFT', x, y)
+                button:Show()
+            else
+                -- Hide buttons beyond the limit
+                button:Hide()
+            end
+        end
+    end
+
+    -- Resize parent frame to fit the layout
+    if parentFrame and parentFrame.SetSize then
+        local width, height = CalculateFrameSize(rows, columns)
+        parentFrame:SetSize(width, height)
+    end
+end
+
 function MainMenuBarMixin:actionbutton_setup()
 	for _,obj in ipairs({MainMenuBar:GetChildren(),MainMenuBarArtFrame:GetChildren()}) do
 		obj:SetParent(pUiMainBar)
 	end
-	
+
 	for index=1, NUM_ACTIONBAR_BUTTONS do
 		pUiMainBar:SetFrameRef('ActionButton'..index, _G['ActionButton'..index])
 	end
-	
+
 	for index=1, NUM_ACTIONBAR_BUTTONS -1 do
 		local ActionButtons = _G['ActionButton'..index]
 		do_action.SetThreeSlice(ActionButtons);
 	end
-	
+
+	-- ✅ Use new layout system for main action bar only
+	local db = addon.db and addon.db.profile and addon.db.profile.mainbars
+	if db and db.player then
+		-- Main action bar with custom layout
+		addon.ArrangeActionBarButtons('ActionButton', pUiMainBar, pUiMainBar,
+			db.player.rows or 1, db.player.columns or 12, db.player.buttons_shown or 12)
+	else
+		-- Fallback to original linear layout for main bar
+		for index=2, NUM_ACTIONBAR_BUTTONS do
+			local ActionButtons = _G['ActionButton'..index]
+			ActionButtons:SetParent(pUiMainBar)
+			ActionButtons:SetClearPoint('LEFT', _G['ActionButton'..(index-1)], 'RIGHT', 7, 0)
+		end
+	end
+
+	-- ✅ Keep secondary bars in their original linear layout for now
+	-- These will be positioned properly in actionbar_setup()
 	for index=2, NUM_ACTIONBAR_BUTTONS do
-		local ActionButtons = _G['ActionButton'..index]
-		ActionButtons:SetParent(pUiMainBar)
-		ActionButtons:SetClearPoint('LEFT', _G['ActionButton'..(index-1)], 'RIGHT', 7, 0)
-		
 		local BottomLeftButtons = _G['MultiBarBottomLeftButton'..index]
-		BottomLeftButtons:SetClearPoint('LEFT', _G['MultiBarBottomLeftButton'..(index-1)], 'RIGHT', 7, 0)
-		
+		if BottomLeftButtons then
+			BottomLeftButtons:SetClearPoint('LEFT', _G['MultiBarBottomLeftButton'..(index-1)], 'RIGHT', 7, 0)
+		end
+
 		local BottomRightButtons = _G['MultiBarBottomRightButton'..index]
-		BottomRightButtons:SetClearPoint('LEFT', _G['MultiBarBottomRightButton'..(index-1)], 'RIGHT', 7, 0)
-		
+		if BottomRightButtons then
+			BottomRightButtons:SetClearPoint('LEFT', _G['MultiBarBottomRightButton'..(index-1)], 'RIGHT', 7, 0)
+		end
+
 		local BonusActionButtons = _G['BonusActionButton'..index]
-		BonusActionButtons:SetClearPoint('LEFT', _G['BonusActionButton'..(index-1)], 'RIGHT', 7, 0)
+		if BonusActionButtons then
+			BonusActionButtons:SetClearPoint('LEFT', _G['BonusActionButton'..(index-1)], 'RIGHT', 7, 0)
+		end
 	end
 end
 
@@ -188,9 +264,15 @@ end
 
 
 function MainMenuBarMixin:actionbar_setup()
+	-- Set up main action bar first button
 	ActionButton1:SetParent(pUiMainBar)
 	ActionButton1:SetClearPoint('BOTTOMLEFT', pUiMainBar, 2, 2)
-	MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, 48)
+
+	-- Position secondary bars - these will be updated by RefreshUpperActionBarsPosition later
+	-- For now, position them with default offsets
+	if MultiBarBottomLeftButton1 then
+		MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, 48)
+	end
 	
 	if config.buttons.pages.show then
 		do_action.SetNumPagesButton(ActionBarUpButton, pUiMainBarArt, 'pageuparrow', 8)
@@ -208,8 +290,17 @@ function MainMenuBarMixin:actionbar_setup()
 		ActionBarDownButton:Hide();
 		MainMenuBarPageNumber:Hide();
 	end
-	MultiBarBottomLeft:SetParent(pUiMainBar)
-	MultiBarBottomRight:SetParent(pUiMainBar)
+	-- ✅ Don't parent secondary bars to pUiMainBar - they should be independent
+	-- MultiBarBottomLeft:SetParent(pUiMainBar)
+	-- MultiBarBottomRight:SetParent(pUiMainBar)
+
+	-- Instead, ensure they're parented to UIParent for independent positioning
+	if MultiBarBottomLeft then
+		MultiBarBottomLeft:SetParent(UIParent)
+	end
+	if MultiBarBottomRight then
+		MultiBarBottomRight:SetParent(UIParent)
+	end
 	MultiBarBottomRight:EnableMouse(false)
 	MultiBarBottomRight:SetClearPoint('BOTTOMLEFT', MultiBarBottomLeftButton1, 'TOPLEFT', 0, 8)
 	-- MultiBarRight:SetClearPoint('TOPRIGHT', UIParent, 'RIGHT', -6, (Minimap:GetHeight() * 1.3))
@@ -233,7 +324,10 @@ function addon.PositionActionBars()
     if pUiMainBar then
         pUiMainBar:SetMovable(true)
         pUiMainBar:ClearAllPoints()
-        
+
+        -- Apply scaling
+        pUiMainBar:SetScale(db.scale_actionbar or 0.9)
+
         if db.player.override then
             -- MODO MANUAL: Posición guardada por el usuario.
             -- ✅ CORRECCIÓN: Dividimos por la escala para convertir píxeles a puntos.
@@ -249,6 +343,15 @@ function addon.PositionActionBars()
     if MultiBarRight then
         MultiBarRight:SetMovable(true)
         MultiBarRight:ClearAllPoints()
+
+        -- Apply scaling
+        MultiBarRight:SetScale(db.scale_rightbar or 0.9)
+
+        -- Apply layout to right bar buttons
+        if db.right then
+            addon.ArrangeActionBarButtons('MultiBarRightButton', MultiBarRight, MultiBarRight,
+                db.right.rows or 1, db.right.columns or 12, db.right.buttons_shown or 12)
+        end
 
         if db.right.override then
             -- MODO MANUAL
@@ -266,6 +369,15 @@ function addon.PositionActionBars()
         MultiBarLeft:SetMovable(true)
         MultiBarLeft:ClearAllPoints()
 
+        -- Apply scaling
+        MultiBarLeft:SetScale(db.scale_leftbar or 0.9)
+
+        -- Apply layout to left bar buttons
+        if db.left then
+            addon.ArrangeActionBarButtons('MultiBarLeftButton', MultiBarLeft, MultiBarLeft,
+                db.left.rows or 1, db.left.columns or 12, db.left.buttons_shown or 12)
+        end
+
         if db.left.override then
             -- MODO MANUAL
             -- ✅ CORRECCIÓN: Dividimos por la escala.
@@ -280,6 +392,60 @@ function addon.PositionActionBars()
             end
         end
         MultiBarLeft:SetUserPlaced(db.left.override)
+    end
+
+    -- ========================================
+    -- ✅ 4. BOTTOM BARS POSITIONING
+    -- ========================================
+
+    -- 4a. Bottom Left Bar (MultiBarBottomLeft)
+    if MultiBarBottomLeft then
+        MultiBarBottomLeft:SetMovable(true)
+        MultiBarBottomLeft:ClearAllPoints()
+
+        -- Apply scaling
+        MultiBarBottomLeft:SetScale(db.scale_bottom_left or 0.9)
+
+        -- Apply layout to bottom left bar buttons
+        if db.bottom_left then
+            addon.ArrangeActionBarButtons('MultiBarBottomLeftButton', MultiBarBottomLeft, MultiBarBottomLeft,
+                db.bottom_left.rows or 1, db.bottom_left.columns or 12, db.bottom_left.buttons_shown or 12)
+        end
+
+        if db.bottom_left.override then
+            -- MODO MANUAL: User-defined position
+            MultiBarBottomLeft:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.bottom_left.x or 0) / scale, (db.bottom_left.y or 0) / scale)
+        else
+            -- MODO AUTOMÁTICO: Independent positioning - NOT tied to ActionButton1
+            -- This will be handled by RefreshUpperActionBarsPosition
+            MultiBarBottomLeft:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 120)
+        end
+        MultiBarBottomLeft:SetUserPlaced(db.bottom_left.override)
+    end
+
+    -- 4b. Bottom Right Bar (MultiBarBottomRight)
+    if MultiBarBottomRight then
+        MultiBarBottomRight:SetMovable(true)
+        MultiBarBottomRight:ClearAllPoints()
+
+        -- Apply scaling
+        MultiBarBottomRight:SetScale(db.scale_bottom_right or 0.9)
+
+        -- Apply layout to bottom right bar buttons
+        if db.bottom_right then
+            addon.ArrangeActionBarButtons('MultiBarBottomRightButton', MultiBarBottomRight, MultiBarBottomRight,
+                db.bottom_right.rows or 1, db.bottom_right.columns or 12, db.bottom_right.buttons_shown or 12)
+        end
+
+        if db.bottom_right.override then
+            -- MODO MANUAL: User-defined position
+            MultiBarBottomRight:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.bottom_right.x or 0) / scale, (db.bottom_right.y or 0) / scale)
+        else
+            -- MODO AUTOMÁTICO: Default positioning above bottom left bar
+            -- This will be handled by RefreshUpperActionBarsPosition
+            MultiBarBottomRight:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 170)
+        end
+        MultiBarBottomRight:SetUserPlaced(db.bottom_right.override)
     end
 end
 
@@ -407,23 +573,202 @@ end
 
 -- update position for secondary action bars
 function addon.RefreshUpperActionBarsPosition()
-    if not MultiBarBottomLeftButton1 or not MultiBarBottomRight then return end
+    if InCombatLockdown() then return end
 
-    -- calculate offset based on background visibility
+    local db = addon.db and addon.db.profile and addon.db.profile.mainbars
+    if not db or not db.player then
+        -- Fallback to original positioning if no config
+        if MultiBarBottomLeftButton1 then
+            MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, 48)
+        end
+        if MultiBarBottomRight then
+            MultiBarBottomRight:SetClearPoint('BOTTOMLEFT', MultiBarBottomLeftButton1, 'TOPLEFT', 0, 8)
+        end
+        return
+    end
+
+    -- Calculate the height of the main bar based on its layout
+    local mainBarRows = db.player.rows or 1
+    local buttonSize = 37
+    local spacing = 7
+    local mainBarHeight = (buttonSize * mainBarRows) + (spacing * (mainBarRows - 1))
+
+    -- calculate offset based on background visibility and main bar height
     local yOffset1, yOffset2
-    if addon.db and addon.db.profile.buttons.hide_main_bar_background then
+    if addon.db and addon.db.profile.buttons and addon.db.profile.buttons.hide_main_bar_background then
         -- values when background is hidden
-        yOffset1 = 45
+        yOffset1 = mainBarHeight + 8  -- Position above main bar
         yOffset2 = 8
     else
         -- default values when background is visible
-        yOffset1 = 48
+        yOffset1 = mainBarHeight + 11  -- Position above main bar with background
         yOffset2 = 8
     end
 
-    -- reposition the bars
-    MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, yOffset1)
-    MultiBarBottomRight:SetClearPoint('BOTTOMLEFT', MultiBarBottomLeftButton1, 'TOPLEFT', 0, yOffset2)
+    -- reposition the bars only if they exist and are not manually positioned
+    if MultiBarBottomLeftButton1 and not (db.bottom_left and db.bottom_left.override) then
+        MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, yOffset1)
+    end
+
+    if MultiBarBottomRight and MultiBarBottomLeftButton1 and not (db.bottom_right and db.bottom_right.override) then
+        MultiBarBottomRight:SetClearPoint('BOTTOMLEFT', MultiBarBottomLeftButton1, 'TOPLEFT', 0, yOffset2)
+    end
+end
+
+-- ========================================
+-- ✅ ACTION BAR VISIBILITY MANAGEMENT
+-- ========================================
+function addon.RefreshActionBarVisibility()
+    if InCombatLockdown() then
+        -- Schedule for after combat
+        addon:RegisterEvent("PLAYER_REGEN_ENABLED")
+        return
+    end
+
+    local db = addon.db and addon.db.profile and addon.db.profile.actionbars
+    if not db then return end
+
+    -- Bottom Left Bar (MultiBarBottomLeft)
+    if MultiBarBottomLeft then
+        if db.bottom_left_enabled then
+            MultiBarBottomLeft:Show()
+            -- Ensure buttons are properly shown and positioned
+            for i = 1, 12 do
+                local button = _G["MultiBarBottomLeftButton" .. i]
+                if button then
+                    button:Show()
+                    -- Make sure button is properly parented
+                    if button:GetParent() ~= MultiBarBottomLeft then
+                        button:SetParent(MultiBarBottomLeft)
+                    end
+                end
+            end
+        else
+            MultiBarBottomLeft:Hide()
+        end
+    end
+
+    -- Bottom Right Bar (MultiBarBottomRight)
+    if MultiBarBottomRight then
+        if db.bottom_right_enabled then
+            MultiBarBottomRight:Show()
+            -- Ensure buttons are properly shown and positioned
+            for i = 1, 12 do
+                local button = _G["MultiBarBottomRightButton" .. i]
+                if button then
+                    button:Show()
+                    -- Make sure button is properly parented
+                    if button:GetParent() ~= MultiBarBottomRight then
+                        button:SetParent(MultiBarBottomRight)
+                    end
+                end
+            end
+        else
+            MultiBarBottomRight:Hide()
+        end
+    end
+
+    -- Right Bar (MultiBarRight)
+    if MultiBarRight then
+        if db.right_enabled then
+            MultiBarRight:Show()
+            -- Ensure buttons are properly shown and positioned
+            for i = 1, 12 do
+                local button = _G["MultiBarRightButton" .. i]
+                if button then
+                    button:Show()
+                    -- Make sure button is properly parented
+                    if button:GetParent() ~= MultiBarRight then
+                        button:SetParent(MultiBarRight)
+                    end
+                end
+            end
+        else
+            MultiBarRight:Hide()
+        end
+    end
+
+    -- Right Bar 2 (MultiBarLeft)
+    if MultiBarLeft then
+        if db.right2_enabled then
+            MultiBarLeft:Show()
+            -- Ensure buttons are properly shown and positioned
+            for i = 1, 12 do
+                local button = _G["MultiBarLeftButton" .. i]
+                if button then
+                    button:Show()
+                    -- Make sure button is properly parented
+                    if button:GetParent() ~= MultiBarLeft then
+                        button:SetParent(MultiBarLeft)
+                    end
+                end
+            end
+        else
+            MultiBarLeft:Hide()
+        end
+    end
+
+    -- Update positioning after visibility changes
+    C_Timer.After(0.1, function()
+        if addon.RefreshUpperActionBarsPosition then
+            addon.RefreshUpperActionBarsPosition()
+        end
+    end)
+end
+
+-- Handle combat lockdown for visibility changes
+local function OnEvent(self, event, ...)
+    if event == "PLAYER_REGEN_ENABLED" then
+        addon:UnregisterEvent("PLAYER_REGEN_ENABLED")
+        addon.RefreshActionBarVisibility()
+    end
+end
+
+if not addon.visibilityEventFrame then
+    addon.visibilityEventFrame = CreateFrame("Frame")
+    addon.visibilityEventFrame:SetScript("OnEvent", OnEvent)
+end
+
+-- ========================================
+-- ✅ ACTION BAR VALIDATION FUNCTION
+-- ========================================
+function addon.ValidateActionBars()
+    local issues = {}
+
+    -- Check if all action bar frames exist
+    local bars = {
+        {frame = MultiBarBottomLeft, name = "Bottom Left Bar", buttons = "MultiBarBottomLeftButton"},
+        {frame = MultiBarBottomRight, name = "Bottom Right Bar", buttons = "MultiBarBottomRightButton"},
+        {frame = MultiBarRight, name = "Right Bar", buttons = "MultiBarRightButton"},
+        {frame = MultiBarLeft, name = "Right Bar 2", buttons = "MultiBarLeftButton"}
+    }
+
+    for _, bar in pairs(bars) do
+        if not bar.frame then
+            table.insert(issues, bar.name .. " frame not found")
+        else
+            -- Check if buttons exist
+            local buttonCount = 0
+            for i = 1, 12 do
+                local button = _G[bar.buttons .. i]
+                if button then buttonCount = buttonCount + 1 end
+            end
+            if buttonCount < 12 then
+                table.insert(issues, bar.name .. " missing buttons (" .. buttonCount .. "/12)")
+            end
+        end
+    end
+
+    if #issues == 0 then
+        print("DragonUI: All action bars validated successfully ✅")
+        return true
+    else
+        print("DragonUI: Action bar validation found issues:")
+        for _, issue in pairs(issues) do
+            print("  ❌ " .. issue)
+        end
+        return false
+    end
 end
 
 function MainMenuBarMixin:initialize()
@@ -431,6 +776,9 @@ function MainMenuBarMixin:initialize()
 	self:actionbar_setup();
 	self:actionbar_art_setup();
 	self:statusbar_setup();
+
+	-- Initialize action bar visibility
+	addon.RefreshActionBarVisibility();
 end
 addon.pUiMainBar = pUiMainBar;
 MainMenuBarMixin:initialize();
@@ -438,19 +786,56 @@ MainMenuBarMixin:initialize();
 -- configuration refresh function
 function addon.RefreshMainbars()
     if not pUiMainBar then return end
-    
+
     local db = addon.db and addon.db.profile
     if not db then return end
-    
+
     local db_mainbars = db.mainbars
     local db_style = db.style
     local db_buttons = db.buttons
-    
+
     -- ========================================
     -- ✅ POSICIONAR BARRAS (NUEVO Y SIMPLIFICADO)
     -- ========================================
     addon.PositionActionBars()
-    
+
+    -- ========================================
+    -- ✅ APLICAR NUEVOS LAYOUTS DE BOTONES
+    -- ========================================
+    if db_mainbars and db_mainbars.player then
+        -- Apply main bar layout
+        addon.ArrangeActionBarButtons('ActionButton', pUiMainBar, pUiMainBar,
+            db_mainbars.player.rows or 1,
+            db_mainbars.player.columns or 12,
+            db_mainbars.player.buttons_shown or 12)
+    end
+
+    -- Apply bottom bar layouts
+    if db_mainbars and db_mainbars.bottom_left then
+        addon.ArrangeActionBarButtons('MultiBarBottomLeftButton', MultiBarBottomLeft, MultiBarBottomLeft,
+            db_mainbars.bottom_left.rows or 1,
+            db_mainbars.bottom_left.columns or 12,
+            db_mainbars.bottom_left.buttons_shown or 12)
+    end
+
+    if db_mainbars and db_mainbars.bottom_right then
+        addon.ArrangeActionBarButtons('MultiBarBottomRightButton', MultiBarBottomRight, MultiBarBottomRight,
+            db_mainbars.bottom_right.rows or 1,
+            db_mainbars.bottom_right.columns or 12,
+            db_mainbars.bottom_right.buttons_shown or 12)
+    end
+
+    -- ========================================
+    -- ✅ REFRESH ACTION BAR VISIBILITY
+    -- ========================================
+    addon.RefreshActionBarVisibility()
+
+    -- ========================================
+    -- ✅ ALWAYS UPDATE SECONDARY BAR POSITIONS
+    -- ========================================
+    -- This ensures secondary bars are positioned correctly regardless of main bar layout
+    addon.RefreshUpperActionBarsPosition()
+
     -- ========================================
     -- ✅ RESTO DE CONFIGURACIONES (se mantiene igual)
     -- ========================================

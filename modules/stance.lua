@@ -83,7 +83,23 @@ function anchor:stancebar_update()
 		-- Read config values dynamically each time
 		local offsetX = config.additional.stance.x_position;
 		local offsetY = config.additional.stance.y_offset or 0;  -- Additional Y offset for fine-tuning
-		
+		local override = config.additional.stance.override or false;
+
+		-- ✅ INDEPENDENT POSITIONING MODE
+		if override then
+			-- Independent positioning - not tied to any other bars
+			-- Use y_position if available (from options), otherwise use y_position from editor mode
+			local yPos = config.additional.stance.y_position or 200;
+			local anchorFrame = config.additional.stance.anchorFrame or "UIParent";
+			local anchor = config.additional.stance.anchor or "BOTTOMLEFT";
+			local anchorParent = config.additional.stance.anchorParent or "BOTTOMLEFT";
+
+			self:ClearAllPoints();
+			self:SetPoint(anchor, _G[anchorFrame] or UIParent, anchorParent, offsetX, yPos + offsetY);
+			return;
+		end
+
+		-- ✅ SMART ANCHORING MODE (original behavior)
 		-- Check if Pet Bar exists and is visible first (stance should be above pet bar)
 		local petBarHolder = _G["pUiPetBarHolder"];
 		if petBarHolder and petBarHolder:IsShown() then
@@ -329,10 +345,16 @@ end, 'PLAYER_ENTERING_WORLD');
 
 -- Refresh function for stance bar configuration changes
 function addon.RefreshStance()
-	if not _G.pUiStanceBar or InCombatLockdown() or UnitAffectingCombat('player') then 
-		return 
+	if not _G.pUiStanceBar or InCombatLockdown() or UnitAffectingCombat('player') then
+		return
 	end
-	
+
+	-- Apply scaling
+	local scale = config.mainbars and config.mainbars.scale_stance or 0.9;
+	if _G.pUiStanceHolder then
+		_G.pUiStanceHolder:SetScale(scale);
+	end
+
 	-- Update button size and spacing
 	local btnsize = config.additional.size;
 	local space = config.additional.spacing;

@@ -158,12 +158,154 @@ function addon:CreateOptionsTable()
                 name = "Action Bars",
                 order = 1,
                 args = {
+                    -- ========================================
+                    -- ✅ QUICK SETUP SECTION
+                    -- ========================================
+                    quicksetup = {
+                        type = 'group',
+                        name = "Quick Setup",
+                        inline = true,
+                        order = 0.1,
+                        args = {
+                            desc_quicksetup = {
+                                type = 'description',
+                                name = "|cffFFD700Quick Actions:|r Get started with common action bar configurations.",
+                                order = 1
+                            },
+                            enable_all_bars = {
+                                type = 'execute',
+                                name = "Enable All Action Bars",
+                                desc = "Enable all action bars at once for maximum hotkey availability",
+                                func = function()
+                                    addon.db.profile.actionbars.bottom_left_enabled = true
+                                    addon.db.profile.actionbars.bottom_right_enabled = true
+                                    addon.db.profile.actionbars.right_enabled = true
+                                    addon.db.profile.actionbars.right2_enabled = true
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                    print("DragonUI: All action bars enabled!")
+                                end,
+                                order = 2
+                            },
+                            disable_all_bars = {
+                                type = 'execute',
+                                name = "Disable All Secondary Bars",
+                                desc = "Disable all secondary action bars (keeps only main bar visible)",
+                                func = function()
+                                    addon.db.profile.actionbars.bottom_left_enabled = false
+                                    addon.db.profile.actionbars.bottom_right_enabled = false
+                                    addon.db.profile.actionbars.right_enabled = false
+                                    addon.db.profile.actionbars.right2_enabled = false
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                    print("DragonUI: All secondary action bars disabled!")
+                                end,
+                                order = 3
+                            }
+                        }
+                    },
+
+                    -- ========================================
+                    -- ✅ ACTION BAR VISIBILITY TOGGLES
+                    -- ========================================
+                    visibility = {
+                        type = 'group',
+                        name = "Individual Bar Visibility",
+                        inline = true,
+                        order = 0.5,
+                        args = {
+                            header_visibility = {
+                                type = 'header',
+                                name = "Enable/Disable Action Bars",
+                                order = 1
+                            },
+                            desc_visibility = {
+                                type = 'description',
+                                name = "Control which action bars are shown. These work alongside Blizzard's built-in action bar toggles.",
+                                order = 1.1
+                            },
+                            bottom_left_enabled = {
+                                type = 'toggle',
+                                name = "Bottom Left Bar",
+                                desc = "Show/hide the bottom left action bar (MultiBarBottomLeft)",
+                                get = function()
+                                    return addon.db.profile.actionbars.bottom_left_enabled
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.bottom_left_enabled = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 2,
+                                width = "half"
+                            },
+                            bottom_right_enabled = {
+                                type = 'toggle',
+                                name = "Bottom Right Bar",
+                                desc = "Show/hide the bottom right action bar (MultiBarBottomRight)",
+                                get = function()
+                                    return addon.db.profile.actionbars.bottom_right_enabled
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.bottom_right_enabled = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 3,
+                                width = "half"
+                            },
+                            right_enabled = {
+                                type = 'toggle',
+                                name = "Right Bar",
+                                desc = "Show/hide the right action bar (MultiBarRight)",
+                                get = function()
+                                    return addon.db.profile.actionbars.right_enabled
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.right_enabled = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 4,
+                                width = "half"
+                            },
+                            right2_enabled = {
+                                type = 'toggle',
+                                name = "Right Bar 2",
+                                desc = "Show/hide the second right action bar (MultiBarLeft)",
+                                get = function()
+                                    return addon.db.profile.actionbars.right2_enabled
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.right2_enabled = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 5,
+                                width = "half"
+                            }
+                        }
+                    },
                     mainbars = {
                         type = 'group',
-                        name = "Main Bars",
+                        name = "Action Bar Configuration",
                         inline = true,
                         order = 1,
                         args = {
+                            -- ========================================
+                            -- ✅ ACTION BAR SCALING OPTIONS
+                            -- ========================================
+                            header_scaling = {
+                                type = 'header',
+                                name = "Action Bar Scaling",
+                                order = 0.5
+                            },
                             scale_actionbar = {
                                 type = 'range',
                                 name = "Main Bar Scale",
@@ -176,6 +318,285 @@ function addon:CreateOptionsTable()
                                 end,
                                 set = createSetFunction("mainbars", "scale_actionbar", nil, "RefreshMainbars"),
                                 order = 1
+                            },
+                            scale_bottom_left = {
+                                type = 'range',
+                                name = "Bottom Left Bar Scale",
+                                desc = "Scale for bottom left action bar",
+                                min = 0.5,
+                                max = 2.0,
+                                step = 0.1,
+                                get = function()
+                                    return addon.db.profile.mainbars.scale_bottom_left
+                                end,
+                                set = createSetFunction("mainbars", "scale_bottom_left", nil, "RefreshMainbars"),
+                                order = 1.1
+                            },
+                            scale_bottom_right = {
+                                type = 'range',
+                                name = "Bottom Right Bar Scale",
+                                desc = "Scale for bottom right action bar",
+                                min = 0.5,
+                                max = 2.0,
+                                step = 0.1,
+                                get = function()
+                                    return addon.db.profile.mainbars.scale_bottom_right
+                                end,
+                                set = createSetFunction("mainbars", "scale_bottom_right", nil, "RefreshMainbars"),
+                                order = 1.2
+                            },
+                            scale_rightbar = {
+                                type = 'range',
+                                name = "Right Bar Scale",
+                                desc = "Scale for right action bar",
+                                min = 0.5,
+                                max = 2.0,
+                                step = 0.1,
+                                get = function()
+                                    return addon.db.profile.mainbars.scale_rightbar
+                                end,
+                                set = createSetFunction("mainbars", "scale_rightbar", nil, "RefreshMainbars"),
+                                order = 1.3
+                            },
+                            scale_leftbar = {
+                                type = 'range',
+                                name = "Right Bar 2 Scale",
+                                desc = "Scale for second right action bar (MultiBarLeft)",
+                                min = 0.5,
+                                max = 2.0,
+                                step = 0.1,
+                                get = function()
+                                    return addon.db.profile.mainbars.scale_leftbar
+                                end,
+                                set = createSetFunction("mainbars", "scale_leftbar", nil, "RefreshMainbars"),
+                                order = 1.4
+                            },
+                            scale_stance = {
+                                type = 'range',
+                                name = "Stance Bar Scale",
+                                desc = "Scale for stance/shapeshift bar",
+                                min = 0.5,
+                                max = 2.0,
+                                step = 0.1,
+                                get = function()
+                                    return addon.db.profile.mainbars.scale_stance
+                                end,
+                                set = createSetFunction("mainbars", "scale_stance", nil, "RefreshStance"),
+                                order = 1.5
+                            },
+
+                            -- ========================================
+                            -- ✅ MAIN BAR LAYOUT CONFIGURATION
+                            -- ========================================
+                            header_layout = {
+                                type = 'header',
+                                name = "Main Action Bar Layout",
+                                order = 1.5
+                            },
+                            player_rows = {
+                                type = 'range',
+                                name = "Rows",
+                                desc = "Number of rows for the main action bar (1-4)",
+                                min = 1,
+                                max = 4,
+                                step = 1,
+                                get = function()
+                                    return addon.db.profile.mainbars.player.rows or 1
+                                end,
+                                set = function(info, value)
+                                    addon.db.profile.mainbars.player.rows = value
+                                    -- Ensure we have enough slots for visible buttons
+                                    local columns = addon.db.profile.mainbars.player.columns or 12
+                                    local buttonsShown = addon.db.profile.mainbars.player.buttons_shown or 12
+                                    if value * columns < buttonsShown then
+                                        addon.db.profile.mainbars.player.buttons_shown = value * columns
+                                    end
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 2
+                            },
+                            player_columns = {
+                                type = 'range',
+                                name = "Columns",
+                                desc = "Number of columns for the main action bar (1-12)",
+                                min = 1,
+                                max = 12,
+                                step = 1,
+                                get = function()
+                                    return addon.db.profile.mainbars.player.columns or 12
+                                end,
+                                set = function(info, value)
+                                    addon.db.profile.mainbars.player.columns = value
+                                    -- Ensure we have enough slots for visible buttons
+                                    local rows = addon.db.profile.mainbars.player.rows or 1
+                                    local buttonsShown = addon.db.profile.mainbars.player.buttons_shown or 12
+                                    if rows * value < buttonsShown then
+                                        addon.db.profile.mainbars.player.buttons_shown = rows * value
+                                    end
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 3
+                            },
+                            player_buttons_shown = {
+                                type = 'range',
+                                name = "Buttons Shown",
+                                desc = "Number of buttons to display (1-12)",
+                                min = 1,
+                                max = 12,
+                                step = 1,
+                                get = function()
+                                    return addon.db.profile.mainbars.player.buttons_shown or 12
+                                end,
+                                set = function(info, value)
+                                    local rows = addon.db.profile.mainbars.player.rows or 1
+                                    local columns = addon.db.profile.mainbars.player.columns or 12
+                                    -- Ensure we don't exceed available slots
+                                    if value > rows * columns then
+                                        value = rows * columns
+                                    end
+                                    addon.db.profile.mainbars.player.buttons_shown = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 4
+                            },
+
+                            -- Layout presets
+                            header_presets = {
+                                type = 'header',
+                                name = "Layout Presets",
+                                order = 4.5
+                            },
+                            preset_reset = {
+                                type = 'execute',
+                                name = "Reset to Default (1x12)",
+                                desc = "Reset main bar to default single row layout",
+                                func = function()
+                                    addon.db.profile.mainbars.player.rows = 1
+                                    addon.db.profile.mainbars.player.columns = 12
+                                    addon.db.profile.mainbars.player.buttons_shown = 12
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 4.8
+                            },
+                            preset_single_row = {
+                                type = 'execute',
+                                name = "Single Row (1x12)",
+                                desc = "Set main bar to single row layout",
+                                func = function()
+                                    addon.db.profile.mainbars.player.rows = 1
+                                    addon.db.profile.mainbars.player.columns = 12
+                                    addon.db.profile.mainbars.player.buttons_shown = 12
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 5
+                            },
+                            preset_double_row = {
+                                type = 'execute',
+                                name = "Double Row (2x6)",
+                                desc = "Set main bar to double row layout",
+                                func = function()
+                                    addon.db.profile.mainbars.player.rows = 2
+                                    addon.db.profile.mainbars.player.columns = 6
+                                    addon.db.profile.mainbars.player.buttons_shown = 12
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 6
+                            },
+                            preset_triple_row = {
+                                type = 'execute',
+                                name = "Triple Row (3x4)",
+                                desc = "Set main bar to triple row layout",
+                                func = function()
+                                    addon.db.profile.mainbars.player.rows = 3
+                                    addon.db.profile.mainbars.player.columns = 4
+                                    addon.db.profile.mainbars.player.buttons_shown = 12
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 7
+                            },
+                            preset_quad_row = {
+                                type = 'execute',
+                                name = "Quad Row (4x3)",
+                                desc = "Set main bar to quad row layout (your preference!)",
+                                func = function()
+                                    addon.db.profile.mainbars.player.rows = 4
+                                    addon.db.profile.mainbars.player.columns = 3
+                                    addon.db.profile.mainbars.player.buttons_shown = 12
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 8
+                            },
+
+                            -- ========================================
+                            -- ✅ LEFT BAR LAYOUT CONFIGURATION
+                            -- ========================================
+                            header_left_layout = {
+                                type = 'header',
+                                name = "Left Action Bar Layout",
+                                order = 8.5
+                            },
+                            left_rows = {
+                                type = 'range',
+                                name = "Left Bar Rows",
+                                desc = "Number of rows for the left action bar (1-4)",
+                                min = 1,
+                                max = 4,
+                                step = 1,
+                                get = function()
+                                    return addon.db.profile.mainbars.left.rows or 1
+                                end,
+                                set = function(info, value)
+                                    addon.db.profile.mainbars.left.rows = value
+                                    local columns = addon.db.profile.mainbars.left.columns or 12
+                                    local buttonsShown = addon.db.profile.mainbars.left.buttons_shown or 12
+                                    if value * columns < buttonsShown then
+                                        addon.db.profile.mainbars.left.buttons_shown = value * columns
+                                    end
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 9
+                            },
+                            left_columns = {
+                                type = 'range',
+                                name = "Left Bar Columns",
+                                desc = "Number of columns for the left action bar (1-12)",
+                                min = 1,
+                                max = 12,
+                                step = 1,
+                                get = function()
+                                    return addon.db.profile.mainbars.left.columns or 12
+                                end,
+                                set = function(info, value)
+                                    addon.db.profile.mainbars.left.columns = value
+                                    local rows = addon.db.profile.mainbars.left.rows or 1
+                                    local buttonsShown = addon.db.profile.mainbars.left.buttons_shown or 12
+                                    if rows * value < buttonsShown then
+                                        addon.db.profile.mainbars.left.buttons_shown = rows * value
+                                    end
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 10
+                            },
+                            left_buttons_shown = {
+                                type = 'range',
+                                name = "Left Bar Buttons Shown",
+                                desc = "Number of buttons to display on left bar (1-12)",
+                                min = 1,
+                                max = 12,
+                                step = 1,
+                                get = function()
+                                    return addon.db.profile.mainbars.left.buttons_shown or 12
+                                end,
+                                set = function(info, value)
+                                    local rows = addon.db.profile.mainbars.left.rows or 1
+                                    local columns = addon.db.profile.mainbars.left.columns or 12
+                                    if value > rows * columns then
+                                        value = rows * columns
+                                    end
+                                    addon.db.profile.mainbars.left.buttons_shown = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 11
                             },
                             -- AÑADIR CONFIGURACIONES DE POSICIÓN
                            header_position = {
@@ -196,80 +617,197 @@ function addon:CreateOptionsTable()
                             },
                             reset_positions = {
                                 type = 'execute',
-                                name = "Reset Bar Positions",
-                                desc = "Resets all action bars to their default positions.",
+                                name = "Reset All Bar Positions",
+                                desc = "Resets all action bars to their default positions and disables manual positioning.",
                                 func = function()
                                     local db = addon.db.profile.mainbars
+                                    -- Reset all action bar overrides
                                     db.player.override = false
                                     db.left.override = false
                                     db.right.override = false
-                                    -- Opcional: resetear también las coordenadas a 0.
+                                    db.bottom_left.override = false
+                                    db.bottom_right.override = false
+
+                                    -- Reset coordinates
                                     db.player.x, db.player.y = 0, 0
                                     db.left.x, db.left.y = 0, 0
                                     db.right.x, db.right.y = 0, 0
-                                    
-                                    addon.PositionActionBars()
+                                    db.bottom_left.x, db.bottom_left.y = 0, 0
+                                    db.bottom_right.x, db.bottom_right.y = 0, 0
+
+                                    -- Reset stance bar if it exists
+                                    if addon.db.profile.additional and addon.db.profile.additional.stance then
+                                        addon.db.profile.additional.stance.override = false
+                                        addon.db.profile.additional.stance.x_position = 82
+                                        addon.db.profile.additional.stance.y_position = 200
+                                        addon.db.profile.additional.stance.y_offset = -44
+                                    end
+
+                                    -- Apply changes
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                    if addon.RefreshStance then addon.RefreshStance() end
+
+                                    print("DragonUI: All action bar positions reset to defaults!")
                                 end,
                                 order = 4.6
                              },
-                            -- ✅ ACTUALIZADOS LOS SLIDERS PARA USAR LA NUEVA ESTRUCTURA Y LÓGICA 'disabled'.
-                            x_position = {
-                                type = 'range',
-                                name = "Main Bar X",
-                                min = 0, max = 2500, step = 1,
-                                get = function() return addon.db.profile.mainbars.player.x or 0 end,
-                                set = createInstantSetFunction("mainbars", "player", "x", "PositionActionBars"),
-                                order = 5,
-                                -- Se deshabilita si la barra no está en modo 'override'.
-                                disabled = function() return not addon.db.profile.mainbars.player.override end
+                            -- ========================================
+                            -- ✅ EDITOR MODE POSITIONING
+                            -- ========================================
+                            header_editor_positioning = {
+                                type = 'header',
+                                name = "Action Bar Positioning",
+                                order = 5
                             },
-                            y_position = {
-                                type = 'range',
-                                name = "Main Bar Y",
-                                min = 0, max = 1500, step = 1,
-                                get = function() return addon.db.profile.mainbars.player.y or 0 end,
-                                set = createInstantSetFunction("mainbars", "player", "y", "PositionActionBars"),
-                                order = 6,
-                                disabled = function() return not addon.db.profile.mainbars.player.override end
-                            },
-                            multibar_left_x = {
-                                type = 'range',
-                                name = "Left Bar X",
-                                min = 0, max = 2500, step = 1,
-                                get = function() return addon.db.profile.mainbars.left.x or 0 end,
-                                set = createInstantSetFunction("mainbars", "left", "x", "PositionActionBars"),
-                                order = 7,
-                                disabled = function() return not addon.db.profile.mainbars.left.override end
-                            },
-                            multibar_left_y = {
-                                type = 'range',
-                                name = "Left Bar Y",
-                                min = 0, max = 1500, step = 1,
-                                get = function() return addon.db.profile.mainbars.left.y or 0 end,
-                                set = createInstantSetFunction("mainbars", "left", "y", "PositionActionBars"),
-                                order = 8,
-                                disabled = function() return not addon.db.profile.mainbars.left.override end
-                            },
-                            multibar_right_x = {
-                                type = 'range',
-                                name = "Right Bar X",
-                                min = 0, max = 2500, step = 1,
-                                get = function() return addon.db.profile.mainbars.right.x or 0 end,
-                                set = createInstantSetFunction("mainbars", "right", "x", "PositionActionBars"),
-                                order = 9,
-                                disabled = function() return not addon.db.profile.mainbars.right.override end
-                            },
-                            multibar_right_y = {
-                                type = 'range',
-                                name = "Right Bar Y",
-                                min = 0, max = 1500, step = 1,
-                                get = function() return addon.db.profile.mainbars.right.y or 0 end,
-                                set = createInstantSetFunction("mainbars", "right", "y", "PositionActionBars"),
-                                order = 10,
-                                disabled = function() return not addon.db.profile.mainbars.right.override end
+                            desc_editor_positioning = {
+                                type = 'description',
+                                name = "|cff00FF00Use Editor Mode to position action bars:|r Click 'Move UI Elements' at the top of the options menu to drag and drop action bars to your desired positions.\n\n" ..
+                                      "|cffFFD700Tip:|r All action bars can be moved independently and will remember their positions.",
+                                order = 5.1
                             }
                         }
                     },
+
+                    -- ========================================
+                    -- ✅ BOTTOM BARS LAYOUT CONFIGURATION
+                    -- ========================================
+                    bottombars = {
+                        type = 'group',
+                        name = "Bottom Bars Layout",
+                        inline = true,
+                        order = 1.5,
+                        args = {
+                            header_bottom_layout = {
+                                type = 'header',
+                                name = "Bottom Action Bars Layout",
+                                order = 1
+                            },
+                            desc_bottom_layout = {
+                                type = 'description',
+                                name = "Configure the layout (rows/columns) for bottom action bars. These bars stack above the main action bar.",
+                                order = 1.1
+                            },
+
+                            -- Quick preset buttons for bottom bars
+                            preset_bottom_single = {
+                                type = 'execute',
+                                name = "Set Both to Single Row (1x12)",
+                                desc = "Set both bottom bars to traditional single row layout",
+                                func = function()
+                                    addon.db.profile.mainbars.bottom_left.rows = 1
+                                    addon.db.profile.mainbars.bottom_left.columns = 12
+                                    addon.db.profile.mainbars.bottom_left.buttons_shown = 12
+                                    addon.db.profile.mainbars.bottom_right.rows = 1
+                                    addon.db.profile.mainbars.bottom_right.columns = 12
+                                    addon.db.profile.mainbars.bottom_right.buttons_shown = 12
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 1.5
+                            },
+                            preset_bottom_compact = {
+                                type = 'execute',
+                                name = "Set Both to Compact (2x6)",
+                                desc = "Set both bottom bars to compact 2 row layout",
+                                func = function()
+                                    addon.db.profile.mainbars.bottom_left.rows = 2
+                                    addon.db.profile.mainbars.bottom_left.columns = 6
+                                    addon.db.profile.mainbars.bottom_left.buttons_shown = 12
+                                    addon.db.profile.mainbars.bottom_right.rows = 2
+                                    addon.db.profile.mainbars.bottom_right.columns = 6
+                                    addon.db.profile.mainbars.bottom_right.buttons_shown = 12
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 1.6
+                            },
+
+                            -- Bottom Left Bar Layout
+                            header_bottom_left = {
+                                type = 'header',
+                                name = "Bottom Left Bar Layout",
+                                order = 2
+                            },
+                            bottom_left_rows = {
+                                type = 'range',
+                                name = "Bottom Left Rows",
+                                desc = "Number of rows for bottom left bar",
+                                min = 1, max = 4, step = 1,
+                                get = function() return addon.db.profile.mainbars.bottom_left.rows or 1 end,
+                                set = function(_, value)
+                                    addon.db.profile.mainbars.bottom_left.rows = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 2.1
+                            },
+                            bottom_left_columns = {
+                                type = 'range',
+                                name = "Bottom Left Columns",
+                                desc = "Number of columns for bottom left bar",
+                                min = 1, max = 12, step = 1,
+                                get = function() return addon.db.profile.mainbars.bottom_left.columns or 12 end,
+                                set = function(_, value)
+                                    addon.db.profile.mainbars.bottom_left.columns = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 2.2
+                            },
+                            bottom_left_buttons_shown = {
+                                type = 'range',
+                                name = "Bottom Left Buttons Shown",
+                                desc = "Number of buttons to display for bottom left bar",
+                                min = 1, max = 12, step = 1,
+                                get = function() return addon.db.profile.mainbars.bottom_left.buttons_shown or 12 end,
+                                set = function(_, value)
+                                    addon.db.profile.mainbars.bottom_left.buttons_shown = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 2.3
+                            },
+
+                            -- Bottom Right Bar Layout
+                            header_bottom_right = {
+                                type = 'header',
+                                name = "Bottom Right Bar Layout",
+                                order = 3
+                            },
+                            bottom_right_rows = {
+                                type = 'range',
+                                name = "Bottom Right Rows",
+                                desc = "Number of rows for bottom right bar",
+                                min = 1, max = 4, step = 1,
+                                get = function() return addon.db.profile.mainbars.bottom_right.rows or 1 end,
+                                set = function(_, value)
+                                    addon.db.profile.mainbars.bottom_right.rows = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 3.1
+                            },
+                            bottom_right_columns = {
+                                type = 'range',
+                                name = "Bottom Right Columns",
+                                desc = "Number of columns for bottom right bar",
+                                min = 1, max = 12, step = 1,
+                                get = function() return addon.db.profile.mainbars.bottom_right.columns or 12 end,
+                                set = function(_, value)
+                                    addon.db.profile.mainbars.bottom_right.columns = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 3.2
+                            },
+                            bottom_right_buttons_shown = {
+                                type = 'range',
+                                name = "Bottom Right Buttons Shown",
+                                desc = "Number of buttons to display for bottom right bar",
+                                min = 1, max = 12, step = 1,
+                                get = function() return addon.db.profile.mainbars.bottom_right.buttons_shown or 12 end,
+                                set = function(_, value)
+                                    addon.db.profile.mainbars.bottom_right.buttons_shown = value
+                                    if addon.RefreshMainbars then addon.RefreshMainbars() end
+                                end,
+                                order = 3.3
+                            }
+                        }
+                    },
+
                     buttons = {
                         type = 'group',
                         name = "Button Appearance",
@@ -924,6 +1462,17 @@ function addon:CreateOptionsTable()
                                 inline = true,
                                 order = 1,
                                 args = {
+                                    override = {
+                                        type = 'toggle',
+                                        name = "Independent Positioning",
+                                        desc = "Enable independent positioning for stance bar (not tied to other bars)",
+                                        get = function()
+                                            return addon.db.profile.additional.stance.override
+                                        end,
+                                        set = createSetFunction("additional", "stance", "override", "RefreshStance"),
+                                        order = 0.5,
+                                        width = "full"
+                                    },
                                     x_position = {
                                         type = 'range',
                                         name = "X Position",
@@ -938,12 +1487,33 @@ function addon:CreateOptionsTable()
                                         order = 1,
                                         width = "full"
                                     },
+                                    y_position = {
+                                        type = 'range',
+                                        name = "Y Position",
+                                        desc = "Vertical position of the stance bar (independent mode only)",
+                                        min = 0,
+                                        max = 1000,
+                                        step = 1,
+                                        get = function()
+                                            return addon.db.profile.additional.stance.y_position
+                                        end,
+                                        set = createSetFunction("additional", "stance", "y_position", "RefreshStance"),
+                                        order = 1.5,
+                                        width = "full",
+                                        disabled = function() return not addon.db.profile.additional.stance.override end
+                                    },
                                     y_offset = {
                                         type = 'range',
                                         name = "Y Offset",
-                                        desc = "|cff00FF00Smart Anchoring:|r The stance bar automatically positions above the main action bar using intelligent anchoring.\n" ..
-                                            "|cffFFFF00Fine-Tuning:|r Use this offset to make small vertical adjustments while preserving the smart anchoring behavior.\n" ..
-                                            "|cffFFD700Note:|r Positive values move the bar up, negative values move it down.",
+                                        desc = function()
+                                            if addon.db.profile.additional.stance.override then
+                                                return "|cffFFFF00Independent Mode:|r Additional fine-tuning offset for precise positioning."
+                                            else
+                                                return "|cff00FF00Smart Anchoring:|r The stance bar automatically positions above the main action bar using intelligent anchoring.\n" ..
+                                                    "|cffFFFF00Fine-Tuning:|r Use this offset to make small vertical adjustments while preserving the smart anchoring behavior.\n" ..
+                                                    "|cffFFD700Note:|r Positive values move the bar up, negative values move it down."
+                                            end
+                                        end,
                                         min = -50,
                                         max = 50,
                                         step = 1,

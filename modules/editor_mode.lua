@@ -187,6 +187,25 @@ local moduleConfig = {
         actionbar = true
     },
 
+    -- ✅ Bottom action bars support
+    ["MultiBarBottomLeft"] = {
+        dbPath = {"mainbars", "bottom_left"}, -- Ruta a la config de la barra inferior izquierda
+        xKey = "x",
+        yKey = "y",
+        refreshFunc = "PositionActionBars",
+        displayName = "Bottom Left Action Bar",
+        actionbar = true
+    },
+
+    ["MultiBarBottomRight"] = {
+        dbPath = {"mainbars", "bottom_right"}, -- Ruta a la config de la barra inferior derecha
+        xKey = "x",
+        yKey = "y",
+        refreshFunc = "PositionActionBars",
+        displayName = "Bottom Right Action Bar",
+        actionbar = true
+    },
+
      ["DragonUIPartyMoveFrame"] = {
         dbPath = {"unitframe", "party"},
         xKey = "x",
@@ -197,7 +216,7 @@ local moduleConfig = {
     },
 
     -- Stance Bar, Pet Bar, etc. (sin cambios)
-    ["StanceBarFrame"] = { dbPath = {"additional", "stance"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshStance", displayName = "Stance Bar" },
+    ["pUiStanceHolder"] = { dbPath = {"additional", "stance"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshStance", displayName = "Stance Bar", independent = true },
     ["PetActionBarFrame"] = { dbPath = {"additional", "pet"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshPetbar", displayName = "Pet Bar" },
     ["MicroButtonAndBagsBar"] = { dbPath = {"micromenu"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshMicromenu", displayName = "Micro Menu" },
     ["ChatFrame1"] = { dbPath = {"chat"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshChat", displayName = "Chat Frame" }
@@ -306,6 +325,30 @@ local function makeFrameMovable(frame, config)
                 addon:RefreshUnitFrames()
             end
 
+        elseif config.independent then
+            -- === LÓGICA ESPECÍFICA PARA FRAMES INDEPENDIENTES (STANCE BAR) ===
+            -- Get the current position but don't apply UI scale correction since we're saving screen coordinates
+            local x, y = frame:GetLeft(), frame:GetBottom()
+
+            -- Enable independent positioning mode
+            setDbValue(config.dbPath, "override", true)
+            setDbValue(config.dbPath, "anchor", "BOTTOMLEFT")
+            setDbValue(config.dbPath, "anchorParent", "BOTTOMLEFT")
+            setDbValue(config.dbPath, "anchorFrame", "UIParent")
+            setDbValue(config.dbPath, config.xKey, x)
+            -- For stance bar, save Y position to the correct key
+            if config.displayName == "Stance Bar" then
+                setDbValue(config.dbPath, "y_position", y)
+                -- Clear the y_offset to prevent double-offsetting
+                setDbValue(config.dbPath, "y_offset", 0)
+            else
+                setDbValue(config.dbPath, config.yKey, y)
+            end
+
+            -- Don't call refresh immediately to prevent position jumping
+            -- The position is already set by the drag operation
+            print("Stance bar position saved: " .. math.floor(x) .. ", " .. math.floor(y))
+
         else
             -- === LÓGICA GENÉRICA PARA TODOS LOS DEMÁS FRAMES ===
             local x, y
@@ -318,7 +361,7 @@ local function makeFrameMovable(frame, config)
                 setDbValue(config.dbPath, "anchorParent", "UIParent")
                 setDbValue(config.dbPath, "anchorPoint", "BOTTOMLEFT")
             else
-                -- Para el resto (Stance, Pet, etc.), usamos offsets del punto de anclaje
+                -- Para el resto (Pet, etc.), usamos offsets del punto de anclaje
                 local _, _, _, xOfs, yOfs = frame:GetPoint()
                 x, y = xOfs, yOfs
             end
@@ -361,10 +404,13 @@ function EditorMode:Show()
     if FocusFrame then FocusFrame:Show(); end
     if PetFrame then PetFrame:Show(); end
     if StanceBarFrame then StanceBarFrame:Show(); end
+    if _G["pUiStanceHolder"] then _G["pUiStanceHolder"]:Show(); end
     if PetActionBarFrame then PetActionBarFrame:Show(); end
     if addon.pUiMainBar then addon.pUiMainBar:Show(); end
     if MultiBarLeft then MultiBarLeft:Show(); end
     if MultiBarRight then MultiBarRight:Show(); end
+    if MultiBarBottomLeft then MultiBarBottomLeft:Show(); end
+    if MultiBarBottomRight then MultiBarBottomRight:Show(); end
 -- ✅ CORRECCIÓN: Forzar la visibilidad de TODOS los componentes de las castbars.
     -- Esto asegura que se muestren correctamente incluso si fueron ocultadas por el ciclo de vida normal del addon.
     if _G["DragonUIPlayerCastbar"] then _G["DragonUIPlayerCastbar"]:Show() end
@@ -467,9 +513,10 @@ function EditorMode:Hide()
         end
     end
 
-    -- ✅ CORRECCIÓN DEFINITIVA: Solo ocultar si la opción existe y está explícitamente en 'false'.
-    if MultiBarLeft and addon.db.profile.actionbars and addon.db.profile.actionbars.multibar_left_enabled == false then MultiBarLeft:Hide(); end
-    if MultiBarRight and addon.db.profile.actionbars and addon.db.profile.actionbars.multibar_right_enabled == false then MultiBarRight:Hide(); end
+    -- ✅ Apply action bar visibility settings
+    if addon.RefreshActionBarVisibility then
+        addon.RefreshActionBarVisibility()
+    end
 
     -- ✅ Ocultar los party frames si no estamos en grupo
     if GetNumPartyMembers() == 0 then

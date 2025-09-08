@@ -4,6 +4,14 @@ local addon = select(2, ...);
 local defaults = {
     profile = {
         -- ACTIONBAR SETTINGS
+        actionbars = {
+            -- Enable/disable states for all action bars
+            bottom_left_enabled = true,     -- MultiBarBottomLeft (Bottom Left Bar)
+            bottom_right_enabled = true,    -- MultiBarBottomRight (Bottom Right Bar)
+            right_enabled = true,           -- MultiBarRight (Right Bar)
+            right2_enabled = true,          -- MultiBarLeft (Right Bar 2)
+        },
+
        mainbars = {
             -- ✅ Cada barra ahora tiene su propia configuración de posición y override.
             player = {
@@ -11,22 +19,55 @@ local defaults = {
                 y_position_offset = 25, -- Offset vertical para el modo automático.
                 x = 0,
                 y = 0,
+                -- Layout configuration - Default to traditional single row
+                rows = 1,           -- Number of rows (1-4)
+                columns = 12,       -- Number of columns (1-12)
+                buttons_shown = 12, -- Number of buttons to display (1-12)
             },
             left = {
                 override = false,
                 x = 0,
                 y = 0,
+                -- Layout configuration
+                rows = 1,           -- Number of rows (1-4)
+                columns = 12,       -- Number of columns (1-12)
+                buttons_shown = 12, -- Number of buttons to display (1-12)
             },
             right = {
                 override = false,
                 x = 0,
                 y = 0,
+                -- Layout configuration
+                rows = 1,           -- Number of rows (1-4)
+                columns = 12,       -- Number of columns (1-12)
+                buttons_shown = 12, -- Number of buttons to display (1-12)
             },
-            
-            -- La escala sigue siendo global para las barras.
-            scale_actionbar = 0.9,
-            scale_rightbar = 0.9,
-            scale_leftbar = 0.9,
+            bottom_left = {
+                override = false,
+                x = 0,
+                y = 0,
+                -- Layout configuration
+                rows = 1,           -- Number of rows (1-4)
+                columns = 12,       -- Number of columns (1-12)
+                buttons_shown = 12, -- Number of buttons to display (1-12)
+            },
+            bottom_right = {
+                override = false,
+                x = 0,
+                y = 0,
+                -- Layout configuration
+                rows = 1,           -- Number of rows (1-4)
+                columns = 12,       -- Number of columns (1-12)
+                buttons_shown = 12, -- Number of buttons to display (1-12)
+            },
+
+            -- Individual scaling for each action bar
+            scale_actionbar = 0.9,      -- Main action bar
+            scale_rightbar = 0.9,       -- Right bar (MultiBarRight)
+            scale_leftbar = 0.9,        -- Left bar (MultiBarLeft)
+            scale_bottom_left = 0.9,    -- Bottom left bar (MultiBarBottomLeft)
+            scale_bottom_right = 0.9,   -- Bottom right bar (MultiBarBottomRight)
+            scale_stance = 0.9,         -- Stance bar
             scale_vehicle = 1,
         },
 
@@ -111,7 +152,12 @@ local defaults = {
             rightbar_offset = 40, -- Offset when bottom right is shown (for pretty_actionbar)
             stance = {
                 x_position = 82,
-                y_offset = -44 -- Additional Y offset for fine-tuning position
+                y_position = 200,  -- Independent Y position
+                y_offset = -44,    -- Additional Y offset for fine-tuning position
+                override = false,  -- Enable independent positioning
+                anchor = "BOTTOM", -- Anchor point
+                anchorParent = "BOTTOM", -- Parent anchor point
+                anchorFrame = "UIParent"  -- Frame to anchor to
             },
             pet = {
                 x_position = -134,
