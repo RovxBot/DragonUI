@@ -34,17 +34,6 @@ function addon.core:OnInitialize()
 	addon.db.RegisterCallback(addon, "OnProfileCopied", "RefreshConfig");
 	addon.db.RegisterCallback(addon, "OnProfileReset", "RefreshConfig");
 	
-	-- Now we can safely create and register options
-	addon.options = addon:CreateOptionsTable();
-	
-	-- Inject AceDBOptions into the profiles section
-	local profilesOptions = LibStub("AceDBOptions-3.0"):GetOptionsTable(addon.db);
-	addon.options.args.profiles = profilesOptions;
-	addon.options.args.profiles.order = 10;
-	
-	LibStub("AceConfig-3.0"):RegisterOptionsTable("DragonUI", addon.options);
-	LibStub("AceConfigDialog-3.0"):AddToBlizOptions("DragonUI", "DragonUI");
-	
 	-- Apply current profile configuration immediately
 	-- This ensures the profile is loaded when the addon starts
 	addon:RefreshConfig();
@@ -139,10 +128,21 @@ function addon:RefreshConfig()
 end
 
 function addon.core:OnEnable()
+	if addon.CreateOptionsTable then
+		addon.options = addon:CreateOptionsTable();
+
+		local profilesOptions = LibStub("AceDBOptions-3.0"):GetOptionsTable(addon.db);
+		addon.options.args.profiles = profilesOptions;
+		addon.options.args.profiles.order = 10;
+
+		LibStub("AceConfig-3.0"):RegisterOptionsTable("DragonUI", addon.options);
+		LibStub("AceConfigDialog-3.0"):AddToBlizOptions("DragonUI", "DragonUI");
+	end
+
 	-- Register slash commands
 	self:RegisterChatCommand("dragonui", "SlashCommand");
 	self:RegisterChatCommand("pi", "SlashCommand");
-	
+
 	-- Fire custom event to signal that DragonUI is fully initialized
 	-- This ensures modules get the correct config values
 	self:SendMessage("DRAGONUI_READY");

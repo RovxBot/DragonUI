@@ -10,6 +10,18 @@ local defaults = {
             bottom_right_enabled = true,    -- MultiBarBottomRight (Bottom Right Bar)
             right_enabled = true,           -- MultiBarRight (Right Bar)
             right2_enabled = true,          -- MultiBarLeft (Right Bar 2)
+
+            -- Visibility behavior options for all action bars
+            main_show_on_hover = false,         -- Main action bar shows only on mouse hover
+            main_show_in_combat = false,        -- Main action bar shows only in combat
+            bottom_left_show_on_hover = false,  -- Bottom left bar shows only on mouse hover
+            bottom_left_show_in_combat = false, -- Bottom left bar shows only in combat
+            bottom_right_show_on_hover = false, -- Bottom right bar shows only on mouse hover
+            bottom_right_show_in_combat = false,-- Bottom right bar shows only in combat
+            right_show_on_hover = false,        -- Right bar shows only on mouse hover
+            right_show_in_combat = false,       -- Right bar shows only in combat
+            right2_show_on_hover = false,       -- Right bar 2 shows only on mouse hover
+            right2_show_in_combat = false,      -- Right bar 2 shows only in combat
         },
 
        mainbars = {
@@ -157,7 +169,9 @@ local defaults = {
                 override = false,  -- Enable independent positioning
                 anchor = "BOTTOM", -- Anchor point
                 anchorParent = "BOTTOM", -- Parent anchor point
-                anchorFrame = "UIParent"  -- Frame to anchor to
+                anchorFrame = "UIParent",  -- Frame to anchor to
+                show_on_hover = false,     -- Show stance bar only on mouse hover
+                show_in_combat = false     -- Show stance bar only in combat
             },
             pet = {
                 x_position = -134,

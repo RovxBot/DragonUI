@@ -292,6 +292,219 @@ function addon:CreateOptionsTable()
                             }
                         }
                     },
+
+                    -- ========================================
+                    -- ✅ VISIBILITY BEHAVIOR OPTIONS
+                    -- ========================================
+                    visibility_behavior = {
+                        type = 'group',
+                        name = "Visibility Behavior",
+                        inline = true,
+                        order = 0.7,
+                        args = {
+                            desc_visibility_behavior = {
+                                type = 'description',
+                                name = "|cffFFD700Advanced Visibility Options:|r Control when action bars are shown based on mouse hover and combat state.",
+                                order = 1
+                            },
+
+                            -- Main Action Bar
+                            header_main_visibility = {
+                                type = 'header',
+                                name = "Main Action Bar",
+                                order = 2
+                            },
+                            main_show_on_hover = {
+                                type = 'toggle',
+                                name = "Show on Hover Only",
+                                desc = "Main action bar will only be visible when you hover over it",
+                                get = function()
+                                    return addon.db.profile.actionbars.main_show_on_hover
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.main_show_on_hover = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 3,
+                                width = "half"
+                            },
+                            main_show_in_combat = {
+                                type = 'toggle',
+                                name = "Show in Combat Only",
+                                desc = "Main action bar will only be visible during combat",
+                                get = function()
+                                    return addon.db.profile.actionbars.main_show_in_combat
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.main_show_in_combat = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 4,
+                                width = "half"
+                            },
+
+                            -- Bottom Left Bar
+                            header_bottom_left_visibility = {
+                                type = 'header',
+                                name = "Bottom Left Bar",
+                                order = 5
+                            },
+                            bottom_left_show_on_hover = {
+                                type = 'toggle',
+                                name = "Show on Hover Only",
+                                desc = "Bottom left bar will only be visible when you hover over it",
+                                get = function()
+                                    return addon.db.profile.actionbars.bottom_left_show_on_hover
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.bottom_left_show_on_hover = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 6,
+                                width = "half"
+                            },
+                            bottom_left_show_in_combat = {
+                                type = 'toggle',
+                                name = "Show in Combat Only",
+                                desc = "Bottom left bar will only be visible during combat",
+                                get = function()
+                                    return addon.db.profile.actionbars.bottom_left_show_in_combat
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.bottom_left_show_in_combat = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 7,
+                                width = "half"
+                            },
+
+                            -- Bottom Right Bar
+                            header_bottom_right_visibility = {
+                                type = 'header',
+                                name = "Bottom Right Bar",
+                                order = 8
+                            },
+                            bottom_right_show_on_hover = {
+                                type = 'toggle',
+                                name = "Show on Hover Only",
+                                desc = "Bottom right bar will only be visible when you hover over it",
+                                get = function()
+                                    return addon.db.profile.actionbars.bottom_right_show_on_hover
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.bottom_right_show_on_hover = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 9,
+                                width = "half"
+                            },
+                            bottom_right_show_in_combat = {
+                                type = 'toggle',
+                                name = "Show in Combat Only",
+                                desc = "Bottom right bar will only be visible during combat",
+                                get = function()
+                                    return addon.db.profile.actionbars.bottom_right_show_in_combat
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.bottom_right_show_in_combat = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 10,
+                                width = "half"
+                            },
+
+                            -- Right Bar
+                            header_right_visibility = {
+                                type = 'header',
+                                name = "Right Bar",
+                                order = 11
+                            },
+                            right_show_on_hover = {
+                                type = 'toggle',
+                                name = "Show on Hover Only",
+                                desc = "Right bar will only be visible when you hover over it",
+                                get = function()
+                                    return addon.db.profile.actionbars.right_show_on_hover
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.right_show_on_hover = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 12,
+                                width = "half"
+                            },
+                            right_show_in_combat = {
+                                type = 'toggle',
+                                name = "Show in Combat Only",
+                                desc = "Right bar will only be visible during combat",
+                                get = function()
+                                    return addon.db.profile.actionbars.right_show_in_combat
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.right_show_in_combat = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 13,
+                                width = "half"
+                            },
+
+                            -- Right Bar 2
+                            header_right2_visibility = {
+                                type = 'header',
+                                name = "Right Bar 2",
+                                order = 14
+                            },
+                            right2_show_on_hover = {
+                                type = 'toggle',
+                                name = "Show on Hover Only",
+                                desc = "Right bar 2 will only be visible when you hover over it",
+                                get = function()
+                                    return addon.db.profile.actionbars.right2_show_on_hover
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.right2_show_on_hover = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 15,
+                                width = "half"
+                            },
+                            right2_show_in_combat = {
+                                type = 'toggle',
+                                name = "Show in Combat Only",
+                                desc = "Right bar 2 will only be visible during combat",
+                                get = function()
+                                    return addon.db.profile.actionbars.right2_show_in_combat
+                                end,
+                                set = function(_, value)
+                                    addon.db.profile.actionbars.right2_show_in_combat = value
+                                    if addon.RefreshActionBarVisibility then
+                                        addon.RefreshActionBarVisibility()
+                                    end
+                                end,
+                                order = 16,
+                                width = "half"
+                            }
+                        }
+                    },
+
                     mainbars = {
                         type = 'group',
                         name = "Action Bar Configuration",
@@ -1523,6 +1736,45 @@ function addon:CreateOptionsTable()
                                         set = createSetFunction("additional", "stance", "y_offset", "RefreshStance"),
                                         order = 2,
                                         width = "full"
+                                    },
+
+                                    -- Visibility behavior options
+                                    header_stance_visibility = {
+                                        type = 'header',
+                                        name = "Visibility Behavior",
+                                        order = 3
+                                    },
+                                    show_on_hover = {
+                                        type = 'toggle',
+                                        name = "Show on Hover Only",
+                                        desc = "Stance bar will only be visible when you hover over it",
+                                        get = function()
+                                            return addon.db.profile.additional.stance.show_on_hover
+                                        end,
+                                        set = function(_, value)
+                                            addon.db.profile.additional.stance.show_on_hover = value
+                                            if addon.UpdateStanceBarVisibility then
+                                                addon.UpdateStanceBarVisibility()
+                                            end
+                                        end,
+                                        order = 4,
+                                        width = "half"
+                                    },
+                                    show_in_combat = {
+                                        type = 'toggle',
+                                        name = "Show in Combat Only",
+                                        desc = "Stance bar will only be visible during combat",
+                                        get = function()
+                                            return addon.db.profile.additional.stance.show_in_combat
+                                        end,
+                                        set = function(_, value)
+                                            addon.db.profile.additional.stance.show_in_combat = value
+                                            if addon.UpdateStanceBarVisibility then
+                                                addon.UpdateStanceBarVisibility()
+                                            end
+                                        end,
+                                        order = 5,
+                                        width = "half"
                                     }
                                 }
                             },

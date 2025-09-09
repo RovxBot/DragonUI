@@ -31,6 +31,98 @@ local stance = {
 	['WARRIOR'] = 'show'
 };
 
+-- ============================================================================
+-- STANCE BAR VISIBILITY MANAGEMENT (HOVER & COMBAT)
+-- ============================================================================
+
+-- Stance bar visibility state
+local stanceVisibilityState = {
+    hovered = false,
+    inCombat = false
+};
+
+-- Update stance bar visibility based on hover and combat states
+local function UpdateStanceBarVisibility()
+    local frame = pUiStanceHolder;
+    if not frame or not addon.db or not addon.db.profile or not addon.db.profile.additional or not addon.db.profile.additional.stance then
+        return;
+    end
+
+    local config = addon.db.profile.additional.stance;
+    local showOnHover = config.show_on_hover;
+    local showInCombat = config.show_in_combat;
+
+    -- Determine if stance bar should be visible
+    local shouldShow = true;
+
+    if showOnHover and showInCombat then
+        -- Show only when BOTH hovering AND in combat
+        shouldShow = stanceVisibilityState.hovered and stanceVisibilityState.inCombat;
+    elseif showOnHover then
+        -- Show only when hovering
+        shouldShow = stanceVisibilityState.hovered;
+    elseif showInCombat then
+        -- Show only when in combat
+        shouldShow = stanceVisibilityState.inCombat;
+    end
+    -- If neither option is enabled, always show (shouldShow remains true)
+
+    if shouldShow then
+        frame:SetAlpha(1);
+    else
+        frame:SetAlpha(0);
+    end
+
+    -- Always keep frame shown for hover detection to work
+    frame:Show();
+end
+
+-- Setup hover detection for stance bar
+local function SetupStanceBarHoverDetection()
+    local frame = pUiStanceHolder;
+    if not frame then return; end
+
+    frame:SetScript("OnEnter", function()
+        stanceVisibilityState.hovered = true;
+        UpdateStanceBarVisibility();
+    end);
+
+    frame:SetScript("OnLeave", function()
+        stanceVisibilityState.hovered = false;
+        UpdateStanceBarVisibility();
+    end);
+end
+
+-- Combat state handler for stance bar
+local function OnStanceCombatStateChanged(inCombat)
+    stanceVisibilityState.inCombat = inCombat;
+    UpdateStanceBarVisibility();
+end
+
+-- Initialize stance bar visibility system
+local function InitializeStanceBarVisibility()
+    -- Setup hover detection
+    SetupStanceBarHoverDetection();
+
+    -- Register combat events
+    local combatFrame = CreateFrame("Frame");
+    combatFrame:RegisterEvent("PLAYER_REGEN_DISABLED"); -- Entering combat
+    combatFrame:RegisterEvent("PLAYER_REGEN_ENABLED");  -- Leaving combat
+    combatFrame:SetScript("OnEvent", function(self, event)
+        local inCombat = (event == "PLAYER_REGEN_DISABLED");
+        OnStanceCombatStateChanged(inCombat);
+    end);
+
+    -- Initial visibility update
+    C_Timer.After(1, function()
+        UpdateStanceBarVisibility();
+    end);
+end
+
+-- Export functions
+addon.UpdateStanceBarVisibility = UpdateStanceBarVisibility;
+addon.InitializeStanceBarVisibility = InitializeStanceBarVisibility;
+
 -- @param: config number - these will be read dynamically
 -- Base Y position (52) is now hardcoded for optimal pretty_actionbar compatibility
 -- Individual Y offsets are available per bar for fine-tuning
@@ -378,5 +470,10 @@ function addon.RefreshStance()
 	-- Update position using relative anchoring (no more absolute Y coordinates)
 	if anchor then
 		anchor:stancebar_update();
+	end
+
+	-- Initialize visibility system for hover/combat behavior
+	if addon.InitializeStanceBarVisibility then
+		addon.InitializeStanceBarVisibility();
 	end
 end
