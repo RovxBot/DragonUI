@@ -4,5 +4,4 @@
 	<Script file="core.lua"/>
 	<Include file="utils\utils.xml"/>
 	<Include file="modules\modules.xml"/>
-	<Script file="options.lua"/>
 </Ui>

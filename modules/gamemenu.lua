@@ -101,27 +101,30 @@ local function OpenDragonUIConfig()
     -- Cerrar el game menu primero
     HideUIPanel(GameMenuFrame)
     
+    -- Asegurar que el addon de opciones (LoadOnDemand) esté cargado
+    if LoadAddOn then
+        pcall(LoadAddOn, "DragonUI_Options")
+    end
+
     -- Intentar múltiples métodos para abrir la configuración
-    
+
     -- Método 1: Comando slash directo
     if SlashCmdList and SlashCmdList["DRAGONUI"] then
         SlashCmdList["DRAGONUI"]("")
         return
     end
     
-    -- Método 2: Función del addon directamente
-    if addon and addon.OpenConfigDialog then
-        addon.OpenConfigDialog()
+    -- Método 2: Usar el manejador central del addon (slash)
+    if addon and addon.core and addon.core.SlashCommand then
+        addon.core:SlashCommand("config")
         return
     end
-    
-    -- Método 3: A través de AceConfigDialog
-    if addon and addon.core then
-        local AceConfigDialog = LibStub and LibStub("AceConfigDialog-3.0", true)
-        if AceConfigDialog then
-            AceConfigDialog:Open("DragonUI")
-            return
-        end
+
+    -- Método 3: A través de AceConfigDialog (fallback si lo anterior no existe)
+    local AceConfigDialog = LibStub and LibStub("AceConfigDialog-3.0", true)
+    if AceConfigDialog then
+        AceConfigDialog:Open("DragonUI")
+        return
     end
     
     -- Método 4: Simular comando slash manualmente
