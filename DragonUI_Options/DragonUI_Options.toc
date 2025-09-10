@@ -1,8 +1,10 @@
 ## Interface: 30300
 ## Title: DragonUI Options
 ## Notes: Options UI for DragonUI
-## Dependencies: DragonUI
+## RequiredDeps: DragonUI
 ## LoadOnDemand: 1
+
+## Version: dev-workspace
 
 options\common.lua
 options\helpers.lua
@@ -22,5 +24,7 @@ options\questtracker.lua
 options\minimap.lua
 options\times.lua
 options\chat.lua
+options\skins.lua
+
 options\init.lua
 

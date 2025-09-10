@@ -46,11 +46,22 @@ local anchor = CreateFrame('Frame', 'DragonUI_MulticastAnchor', UIParent)
 anchor:SetPoint('BOTTOM', UIParent, 'BOTTOM', 0, 52)
 anchor:SetSize(37, 37)
 
+-- Register mover for Totem/Possess anchor
+if addon.CreateMover and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.totembar) then
+    addon:CreateMover(anchor, 'totembar', 'Totem Bar', {'BOTTOM', UIParent, 'BOTTOM', 0, 140})
+    anchor:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('totembar') end end)
+end
+
 -- =============================================================================
 -- SMART POSITIONING FUNCTION
 -- =============================================================================
 function anchor:update_position()
     if InCombatLockdown() or UnitAffectingCombat('player') then return end
+
+    -- If using mover, do not auto-reposition
+    if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.totembar then
+        return
+    end
 
     local offsetX, offsetY = GetTotemConfig()
     self:ClearAllPoints()
@@ -139,7 +150,7 @@ local function PositionPossessButtons()
             button:ClearAllPoints()
             button:SetParent(possessbar)
             button:SetSize(btnsize, btnsize)
-            
+
             if index == 1 then
                 button:SetPoint('BOTTOMLEFT', possessbar, 'BOTTOMLEFT', 0, 0)
             else
@@ -148,12 +159,16 @@ local function PositionPossessButtons()
                     button:SetPoint('LEFT', prevButton, 'RIGHT', space, 0)
                 end
             end
-            
+
             button:Show()
             possessbar:SetAttribute('addchild', button)
         end
     end
-    
+
+    -- Resize anchor to match layout so mover follows the shape
+    local totalWidth = (btnsize * NUM_POSSESS_SLOTS) + (space * (NUM_POSSESS_SLOTS - 1))
+    anchor:SetSize(totalWidth, btnsize)
+
     -- Apply custom button template if available
     if addon.possessbuttons_template then
         addon.possessbuttons_template()

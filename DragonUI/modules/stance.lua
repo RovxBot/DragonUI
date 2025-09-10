@@ -135,6 +135,12 @@ local anchor = CreateFrame('Frame', 'pUiStanceHolder', pUiMainBar)
 anchor:SetPoint('TOPLEFT', UIParent, 'BOTTOM', 0, 105) -- Fallback position slightly above pet bar
 anchor:SetSize(37, 37)
 
+-- Register mover for Stance Bar holder (resizes with buttons)
+if addon.CreateMover and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.stancebar) then
+    addon:CreateMover(anchor, 'stancebar', 'Stance Bar', {'BOTTOM', UIParent, 'BOTTOM', 0, 160})
+    anchor:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('stancebar') end end)
+end
+
 -- Queue system to prevent multiple simultaneous updates
 local updateQueue = {};
 local isUpdating = false;
@@ -172,6 +178,10 @@ end
 -- method update position using relative anchoring
 function anchor:stancebar_update()
 	if not InCombatLockdown() and not UnitAffectingCombat('player') then
+			-- If using mover, do not auto-reposition
+			if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.stancebar then
+				return
+			end
 		-- Read config values dynamically each time
 		local offsetX = config.additional.stance.x_position;
 		local offsetY = config.additional.stance.y_offset or 0;  -- Additional Y offset for fine-tuning
@@ -341,6 +351,9 @@ local function stancebutton_position()
 			button:Hide()
 		end
 	end
+	-- Resize holder to match layout (mover follows this). Use fixed max slots for 3.3.5a.
+	local totalWidth = (btnsize * 10) + (space * 9)
+	anchor:SetSize(totalWidth, btnsize)
 	RegisterStateDriver(stancebar, 'visibility', stance[class] or 'hide')
 	hooksecurefunc('ShapeshiftBar_Update', function()
 		if not InCombatLockdown() and not UnitAffectingCombat('player') then
@@ -467,9 +480,15 @@ function addon.RefreshStance()
 		end
 	end
 	
+	-- Update holder size so mover reflects current layout
+	local totalWidth = (btnsize * 10) + (space * 9)
+	anchor:SetSize(totalWidth, btnsize)
 	-- Update position using relative anchoring (no more absolute Y coordinates)
 	if anchor then
 		anchor:stancebar_update();
+		if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.stancebar and addon.ApplyMover then
+			addon:ApplyMover('stancebar')
+		end
 	end
 
 	-- Initialize visibility system for hover/combat behavior

@@ -136,10 +136,33 @@ function GetMinimapShape() return "ROUND" end
 MinimapCluster:SetScale(config.map.scale)
 MinimapCluster:EnableMouse(false)
 MinimapCluster:ClearAllPoints()
-MinimapCluster:SetPoint('TOPRIGHT', -24, -40)
+-- Default position; will be overridden by RefreshMinimapPosition if DB has values
+MinimapCluster:SetPoint('TOPRIGHT', UIParent, 'TOPRIGHT', -24, -40)
 MinimapCluster:SetHitRectInsets(30, 10, 0, 30)
 MinimapCluster:SetFrameStrata('BACKGROUND')
 MinimapBackdrop:EnableMouse(false)
+
+-- Allow Editor Mode to re-anchor the minimap cluster from the database
+function addon.RefreshMinimapPosition()
+    if not MinimapCluster then return end
+    -- If new mover system is managing minimap, do not override position
+    if addon.Movers and addon.Movers.registry and addon.Movers.registry['minimap'] then
+        return
+    end
+    if not addon.db or not addon.db.profile or not addon.db.profile.map then return end
+    local cfg = addon.db.profile.map.minimap
+    if not cfg then return end
+    MinimapCluster:ClearAllPoints()
+    MinimapCluster:SetPoint('TOPRIGHT', UIParent, 'TOPRIGHT', cfg.x or -24, cfg.y or -40)
+end
+
+-- Apply DB-based minimap position on load
+if addon.RefreshMinimapPosition then addon.RefreshMinimapPosition() end
+-- Register Minimap mover (ElvUI-style)
+if addon.CreateMover and MinimapCluster then
+    addon:CreateMover(MinimapCluster, 'minimap', 'Minimap', {'TOPRIGHT', UIParent, 'TOPRIGHT', -24, -40})
+end
+
 
 -- MiniMap
 Minimap:SetMaskTexture(addon._dir..'uiminimapmask.tga')
@@ -184,14 +207,14 @@ local function Tracking_Update()
     if useOldStyle == nil then
         useOldStyle = config.map.tracking_icons;
     end
-    
+
     if useOldStyle then
         -- OLD STYLE: Show tracking icons like in original WoW
         if texture == 'Interface\\Minimap\\Tracking\\None' then
             -- No tracking selected: Show modern binoculars, hide old icon
             -- Clear old icon
             MiniMapTrackingIcon:SetTexture('');
-            
+
             -- Setup modern button appearance
             MiniMapTrackingButton:SetSize(17, 15);
             atlas(MiniMapTrackingIcon, 'ui-hud-minimap-button', true);
@@ -206,7 +229,7 @@ local function Tracking_Update()
             MiniMapTrackingIcon:SetSize(20, 20);
             MiniMapTrackingIcon:SetTexture(texture);
             MiniMapTrackingIcon:SetTexCoord(0,0,0,1,1,0,1,1);
-            
+
             -- Clear modern button textures to avoid overlap, but keep button clickable
             MiniMapTrackingButton:SetNormalTexture('');
             MiniMapTrackingButton:SetPushedTexture('');
@@ -219,15 +242,15 @@ local function Tracking_Update()
         MiniMapTrackingButton:SetNormalTexture'';
         MiniMapTrackingButton:SetPushedTexture'';
         MiniMapTrackingButton:SetSize(17, 15);
-        
+
         MiniMapTrackingIcon:ClearAllPoints();
         MiniMapTrackingIcon:SetPoint('CENTER', MiniMapTracking, 'CENTER', 0, 0);
-        
+
         atlas(MiniMapTrackingIcon, 'ui-hud-minimap-button', true);
         atlas(MiniMapTrackingButton:GetNormalTexture(), 'ui-hud-minimap-tracking-up');
         atlas(MiniMapTrackingButton:GetPushedTexture(), 'ui-hud-minimap-tracking-down');
         atlas(MiniMapTrackingButton:GetHighlightTexture(), 'ui-hud-minimap-tracking-mouseover');
-        
+
         MiniMapTrackingButton:GetHighlightTexture():SetBlendMode('ADD')
     end
     MiniMapTrackingIconOverlay:SetAlpha(0);
@@ -300,37 +323,37 @@ do
             Minimap_SetPing(Minimap:GetPingPosition())
         end
     end)
-end 
+end
 
 -- Refresh function for minimap configuration changes
 function addon.RefreshMinimap()
     if not Minimap then return end
-    
+
     -- Update minimap cluster scale (not the minimap itself, which uses fixed blipScale)
     local scale = addon.db.profile.map.scale;
     if scale then
         MinimapCluster:SetScale(scale);
     end
-    
+
     -- Update border alpha - use the correct border element we created
     local borderAlpha = addon.db.profile.map.border_alpha;
     if Minimap.BorderTop then
         Minimap.BorderTop:SetAlpha(borderAlpha);
     end
-    
+
     -- Update blip skin (new/old style)
     local useNewBlipStyle = addon.db.profile.map.blip_skin;
     if useNewBlipStyle ~= nil then
         local blipTexture = useNewBlipStyle and addon._dir..'objecticons' or blipDefault;
         Minimap:SetBlipTexture(blipTexture);
     end
-    
+
     -- Update player arrow size
     local arrowSize = addon.db.profile.map.player_arrow_size;
     if arrowSize then
         Minimap:SetPlayerTextureHeight(arrowSize);
         Minimap:SetPlayerTextureWidth(arrowSize);
-        
+
         if MinimapCompassTexture then
             MinimapCompassTexture:SetSize(arrowSize, arrowSize);
         end
@@ -338,12 +361,12 @@ function addon.RefreshMinimap()
             _G.Minimap.PlayerModel:SetSize(arrowSize, arrowSize);
         end
     end
-    
+
     -- Update tracking icons - handled entirely by Tracking_Update function
     if Tracking_Update then
         Tracking_Update();
     end
-    
+
     -- Update zoom buttons
     local zoomButtons = addon.db.profile.map.zoom_in_out;
     if MinimapZoomIn and MinimapZoomOut then
@@ -355,7 +378,7 @@ function addon.RefreshMinimap()
             MinimapZoomOut:Hide();
         end
     end
-    
+
     -- Update zone text font size
     local zoneTextSize = addon.db.profile.map.zonetext_font_size;
     if zoneTextSize then
@@ -399,46 +422,46 @@ end
 -- QUEST TRACKER POSITIONING - Uses database/options system
 local function SetupQuestTracker()
     local watchFrame = WatchFrame or _G.WatchFrame
-    
+
     if not watchFrame then
         return
     end
-    
+
     -- CRITICAL: Ensure proper initialization
     watchFrame:SetMovable(true)
     watchFrame:SetUserPlaced(true)
     watchFrame:SetScale(1.0)
     watchFrame:SetClampedToScreen(false)
-    
+
     -- Clear all points and set new position
     watchFrame:ClearAllPoints()
-    
+
     -- Use database values with fallbacks
     local questTrackerX = addon.db and addon.db.profile and addon.db.profile.map and addon.db.profile.map.quest_tracker_x or -115
     local questTrackerY = addon.db and addon.db.profile and addon.db.profile.map and addon.db.profile.map.quest_tracker_y or -250
-    
+
     -- FIXED: Set anchor point first
     watchFrame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", questTrackerX, questTrackerY)
-    
+
     -- FIXED: Dynamic size settings for quest tracker
     local compactWidth = WATCHFRAME_EXPANDEDWIDTH and (WATCHFRAME_EXPANDEDWIDTH * 0.9) or 250
     watchFrame:SetWidth(compactWidth)
-    
+
     -- Force unlimited height for quest tracker
     watchFrame:SetHeight(500)  -- Set a large maximum height
     if watchFrame.SetMaxLines then
         watchFrame:SetMaxLines(25)  -- Allow up to 25 quest lines
     end
-    
+
     -- CRITICAL: Proper frame strata and level
     watchFrame:SetFrameStrata("MEDIUM")
     watchFrame:SetFrameLevel(100)
-    
+
     -- Force layout update
     if WatchFrame_Update then
         WatchFrame_Update(watchFrame)
     end
-    
+
     -- CRITICAL: Force visibility and ensure proper state
     if watchFrame.SetShown then
         watchFrame:SetShown(GetNumQuestWatches() > 0)
@@ -456,17 +479,17 @@ local function InitializeQuestTracker()
     if questTrackerInitialized then
         return
     end
-    
+
     -- IMMEDIATE setup - no delay to prevent position jump
     SetupQuestTracker()
-    
+
     -- Hook profile changes after initialization
     if addon.db and addon.db.RegisterCallback then
         addon.db.RegisterCallback(addon, "OnProfileChanged", "RefreshQuestTrackerPosition")
         addon.db.RegisterCallback(addon, "OnProfileCopied", "RefreshQuestTrackerPosition")
         addon.db.RegisterCallback(addon, "OnProfileReset", "RefreshQuestTrackerPosition")
     end
-    
+
     questTrackerInitialized = true
 end
 

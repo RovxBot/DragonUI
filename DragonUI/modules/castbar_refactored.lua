@@ -1735,6 +1735,11 @@ local function CreateCastbar(castbarType)
     -- Configurar OnUpdate handler
     frameData.castbar:SetScript('OnUpdate', CreateUpdateFunction(castbarType));
 
+    -- Register ElvUI-style mover for player castbar
+    if castbarType == 'player' and addon.CreateMover and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.playercastbar) then
+        addon:CreateMover(frameData.castbar, 'playercastbar', 'Player Cast Bar', {'BOTTOM', UIParent, 'BOTTOM', 0, 220}, {strictSize = true})
+        frameData.castbar:HookScript('OnShow', function() if addon and addon.ApplyMover then addon:ApplyMover('playercastbar') end end)
+    end
 end
 
 -- =================================================================
@@ -1932,6 +1937,11 @@ RefreshCastbar = function(castbarType)
 
     -- Asegurar que el color de vértice se mantenga después del refresh
     ApplyVertexColor(frameData.castbar);
+
+    -- If our mover is active, re-apply its position last so auto logic doesn't override it
+    if addon and addon.ApplyMover and addon.Movers and addon.Movers.registry and addon.Movers.registry.playercastbar and castbarType == 'player' then
+        addon:ApplyMover('playercastbar')
+    end
 
     -- CRITICAL: Forzar orden de capas después del refresh (doble seguridad)
     -- Esto garantiza que múltiples refreshes no alteren el sublevel del spark

@@ -27,9 +27,19 @@ local anchor = CreateFrame('Frame', 'pUiPetBarHolder', UIParent)
 anchor:SetPoint('TOPLEFT', UIParent, 'BOTTOM', -134, 100) -- Fallback position using current database default
 anchor:SetSize(37, 37)
 
+-- Register mover for Pet Bar holder (resizes with buttons)
+if addon.CreateMover and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.petbar) then
+    addon:CreateMover(anchor, 'petbar', 'Pet Bar', {'BOTTOM', UIParent, 'BOTTOM', -180, 120})
+    anchor:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('petbar') end end)
+end
+
 -- method update position using relative anchoring
 function anchor:petbar_update()
 	if not InCombatLockdown() and not UnitAffectingCombat('player') then
+			-- If using mover, do not auto-reposition
+			if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.petbar then
+				return
+			end
 		-- Read config values dynamically each time
 		local offsetX = config.additional.pet.x_position;
 		local offsetY = config.additional.pet.y_offset or 0;  -- Additional Y offset for fine-tuning
@@ -247,6 +257,9 @@ local function petbutton_position()
 		button:Show();
 		petbar:SetAttribute('addchild', button);
 	end
+	-- Resize holder to match layout (mover follows this)
+	local totalWidth = (btnsize * 10) + (space * 9)
+	anchor:SetSize(totalWidth, btnsize)
 	-- FIXED: Don't force showgrid = 1, let our grid configuration control this
 	-- PetActionBarFrame.showgrid = 1;
 	RegisterStateDriver(petbar, 'visibility', '[pet,novehicleui,nobonusbar:5] show; hide');
@@ -361,8 +374,14 @@ function addon.RefreshPetbar()
 		end
 	end
 	
+	-- Update holder size so mover reflects current layout
+	local totalWidth = (btnsize * 10) + (space * 9)
+	anchor:SetSize(totalWidth, btnsize)
 	-- Update position using relative anchoring (no more absolute Y coordinates)
 	if anchor then
 		anchor:petbar_update();
+		if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.petbar and addon.ApplyMover then
+			addon:ApplyMover('petbar')
+		end
 	end
 end

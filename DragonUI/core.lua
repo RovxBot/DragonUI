@@ -6,12 +6,6 @@ _G.DragonUI_Addon = addon
 addon._optionsSections = addon._optionsSections or {}
 function addon:RegisterOptionsSection(key, order, builderFn)
 	addon._optionsSections[key] = { order = order, build = builderFn }
-	-- Debug: track successful registrations to help diagnose load-order/issues
-	addon.__debug_regs = addon.__debug_regs or {}
-	table.insert(addon.__debug_regs, tostring(key))
-	if DEFAULT_CHAT_FRAME then
-		DEFAULT_CHAT_FRAME:AddMessage("DragonUI_Options: registered section '"..tostring(key).."'")
-	end
 end
 
 
@@ -158,12 +152,17 @@ end
 function addon.core:SlashCommand(input)
 	if not input or input:trim() == "" or input:lower() == "config" then
 		local ok, reason = pcall(LoadAddOn, "DragonUI_Options")
-		if not (IsAddOnLoaded and IsAddOnLoaded("DragonUI_Options")) then
+		local loaded = IsAddOnLoaded and IsAddOnLoaded("DragonUI_Options")
+		if not loaded then
 			self:Print("DragonUI_Options addon not found or failed to load ("..tostring(reason).."). Please install/enable DragonUI_Options as a separate addon next to DragonUI.")
 			return
 		end
 		if addon.EnsureOptionsRegistered then addon.EnsureOptionsRegistered() end
-		LibStub("AceConfigDialog-3.0"):Open("DragonUI");
+		local ACD = LibStub("AceConfigDialog-3.0")
+		local okOpen = pcall(function() ACD:Open("DragonUI") end)
+		if not okOpen then
+			self:Print("DragonUI: options not available yet. If this persists, /reload and ensure DragonUI_Options is enabled.")
+		end
 	elseif input:lower() == "edit" or input:lower() == "editor" then
 		if addon.EditorMode then
 			addon.EditorMode:Toggle();

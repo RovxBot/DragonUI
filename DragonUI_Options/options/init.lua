@@ -4,8 +4,8 @@ local AceConfig = LibStub("AceConfig-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceDBOptions = LibStub("AceDBOptions-3.0")
 
+
 -- TEMP: enable diagnostics to list registered sections in the options UI
-addon.__options_debug = true
 
 -- Registrar to (re)build and register options; safe to call multiple times
 function addon.EnsureOptionsRegistered()
@@ -36,18 +36,6 @@ function addon.EnsureOptionsRegistered()
         end
     end
 
-    -- Lightweight diagnostics to help verify registration (hidden unless debug flag set)
-    if addon.__options_debug then
-        local keys = {}
-        for _, e in ipairs(ordered) do table.insert(keys, e.key) end
-        local regs = addon.__debug_regs and table.concat(addon.__debug_regs, ', ') or '(none)'
-        args.__diagnostics = {
-            type='group', name='Diagnostics', order=999, args = {
-                info = { type='description', order=0, name = 'Registered sections (built): '..table.concat(keys, ', ') },
-                info2 = { type='description', order=1, name = 'RegisterOptionsSection calls seen: '..regs },
-            }
-        }
-    end
 
     -- Add Profiles pane
     if addon.db then
@@ -58,8 +46,9 @@ function addon.EnsureOptionsRegistered()
 
     local options = { name = "DragonUI", type = "group", childGroups = 'tree', args = args }
 
-    -- Always (re)register options table so changes appear
-    AceConfig:RegisterOptionsTable("DragonUI", options)
+    -- Always (re)register options table as a function so the dialog can refresh dynamically
+    AceConfig:RegisterOptionsTable("DragonUI", function() return options end)
+    AceConfigDialog:SetDefaultSize("DragonUI", 900, 700)
 
     -- Add to Blizzard options: main page once and each top-level group as subpages
     addon.__bliz_added = addon.__bliz_added or {}

@@ -35,15 +35,20 @@ local function ApplyChatSettings()
 	StoreChatOriginalSettings();
 	
 	-- Apply custom position and size
-	ChatFrame1:ClearAllPoints();
-	ChatFrame1:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMLEFT', cfg.x_position, cfg.y_position);
-	ChatFrame1:SetSize(cfg.size_x, cfg.size_y);
-	ChatFrame1:SetScale(cfg.scale);
-	
-	-- CRITICAL: Tell WoW that this frame has been manually positioned
-	-- This prevents WoW from automatically repositioning the chat
-	ChatFrame1:SetUserPlaced(true);
-	
+	if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.chat then
+		-- When mover is active, let mover control position; just apply size/scale and reapply mover
+		ChatFrame1:SetSize(cfg.size_x, cfg.size_y);
+		ChatFrame1:SetScale(cfg.scale);
+		if addon.ApplyMover then addon:ApplyMover('chat') end
+	else
+		ChatFrame1:ClearAllPoints();
+		ChatFrame1:SetPoint('BOTTOMLEFT', UIParent, 'BOTTOMLEFT', cfg.x_position, cfg.y_position);
+		ChatFrame1:SetSize(cfg.size_x, cfg.size_y);
+		ChatFrame1:SetScale(cfg.scale);
+		-- CRITICAL: Tell WoW that this frame has been manually positioned
+		ChatFrame1:SetUserPlaced(true);
+	end
+
 	originalChatSettings.isModified = true;
 end
 
@@ -105,6 +110,10 @@ function addon.RefreshChat()
 	if cfg.enabled then
 		-- Apply custom chat settings
 		ApplyChatSettings();
+		-- Re-apply mover if present
+		if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.chat and addon.ApplyMover then
+			addon:ApplyMover('chat')
+		end
 	else
 		-- Restore original chat settings
 		RestoreChatSettings();

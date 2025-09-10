@@ -49,51 +49,51 @@ local function createGridOverlay()
     if gridOverlay then return; end
 
     local boxSize = 32 -- Número de celdas de la rejilla.
-    
+
     -- Frame principal que contendrá todas las líneas.
-    gridOverlay = CreateFrame('Frame', "DragonUIGridOverlayFrame", UIParent) 
+    gridOverlay = CreateFrame('Frame', "DragonUIGridOverlayFrame", UIParent)
     gridOverlay:SetAllPoints(UIParent)
     gridOverlay:SetFrameStrata("BACKGROUND");
     gridOverlay:SetFrameLevel(0);
 
-    local lineThickness = 1 
+    local lineThickness = 1
     local screenWidth = GetScreenWidth()
     local screenHeight = GetScreenHeight()
 
     -- === DIBUJAR LÍNEAS VERTICALES ===
     local wStep = screenWidth / boxSize
-    for i = 0, boxSize do 
-        -- Usamos nombres únicos para máxima seguridad
-        local line = gridOverlay:CreateTexture("DragonUIGridLineV"..i, 'BACKGROUND') 
-        
-        if i == boxSize / 2 then 
-            -- ✅ CORRECCIÓN: Usar SetTexture, que es más compatible con 3.3.5a
-            line:SetTexture(1, 0, 0, 0.5) 
-        else 
-            line:SetTexture(0, 0, 0, 0.5) 
-        end 
-        
-        line:SetPoint("TOPLEFT", gridOverlay, "TOPLEFT", (i * wStep) - (lineThickness / 2), 0) 
-        line:SetPoint('BOTTOMRIGHT', gridOverlay, 'BOTTOMLEFT', (i * wStep) + (lineThickness / 2), 0) 
-    end 
-
-    -- === DIBUJAR LÍNEAS HORIZONTALES ===
-    local hStep = screenHeight / boxSize
     for i = 0, boxSize do
         -- Usamos nombres únicos para máxima seguridad
-        local line = gridOverlay:CreateTexture("DragonUIGridLineH"..i, 'BACKGROUND')
-        
+        local line = gridOverlay:CreateTexture("DragonUIGridLineV"..i, 'BACKGROUND')
+
         if i == boxSize / 2 then
             -- ✅ CORRECCIÓN: Usar SetTexture, que es más compatible con 3.3.5a
             line:SetTexture(1, 0, 0, 0.5)
         else
             line:SetTexture(0, 0, 0, 0.5)
         end
-        
+
+        line:SetPoint("TOPLEFT", gridOverlay, "TOPLEFT", (i * wStep) - (lineThickness / 2), 0)
+        line:SetPoint('BOTTOMRIGHT', gridOverlay, 'BOTTOMLEFT', (i * wStep) + (lineThickness / 2), 0)
+    end
+
+    -- === DIBUJAR LÍNEAS HORIZONTALES ===
+    local hStep = screenHeight / boxSize
+    for i = 0, boxSize do
+        -- Usamos nombres únicos para máxima seguridad
+        local line = gridOverlay:CreateTexture("DragonUIGridLineH"..i, 'BACKGROUND')
+
+        if i == boxSize / 2 then
+            -- ✅ CORRECCIÓN: Usar SetTexture, que es más compatible con 3.3.5a
+            line:SetTexture(1, 0, 0, 0.5)
+        else
+            line:SetTexture(0, 0, 0, 0.5)
+        end
+
         line:SetPoint("TOPLEFT", gridOverlay, "TOPLEFT", 0, -(i * hStep) + (lineThickness / 2))
         line:SetPoint('BOTTOMRIGHT', gridOverlay, 'TOPRIGHT', 0, -(i * hStep) - (lineThickness / 2))
     end
-    
+
     gridOverlay:Hide() -- Oculta por defecto
 end
 
@@ -147,79 +147,11 @@ end
 -- =================================================================
 
 -- Mapeo de módulos a sus configuraciones en la base de datos
+-- NOTE: Legacy mover entries removed for frames now handled by the new mover system
 local moduleConfig = {
-    -- Castbars
-    ["DragonUIPlayerCastbar"] = { dbPath = {"castbar"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshCastbar", displayName = "Player Castbar", castbar = true },
+    -- Keep legacy only for Target/Focus castbars for now (player castbar is now on new mover)
     ["DragonUITargetCastbar"] = { dbPath = {"castbar", "target"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshTargetCastbar", displayName = "Target Castbar", castbar = true },
-    ["DragonUIFocusCastbar"] = { dbPath = {"castbar", "focus"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshFocusCastbar", displayName = "Focus Castbar", castbar = true },
-
-    -- Unit Frames
-    ["PlayerFrame"] = { dbPath = {"unitframe", "player"}, xKey = "x", yKey = "y", refreshFunc = "RefreshUnitFrames", displayName = "Player Frame", unitframe = true },
-    ["TargetFrame"] = { dbPath = {"unitframe", "target"}, xKey = "x", yKey = "y", refreshFunc = "RefreshUnitFrames", displayName = "Target Frame", unitframe = true },
-    ["FocusFrame"] = { dbPath = {"unitframe", "focus"}, xKey = "x", yKey = "y", refreshFunc = "RefreshUnitFrames", displayName = "Focus Frame", unitframe = true },
-    ["PetFrame"] = { dbPath = {"unitframe", "pet"}, xKey = "x", yKey = "y", refreshFunc = "RefreshUnitFrames", displayName = "Pet Frame", unitframe = true },
-
-    -- =========================================================================
-    -- ✅ ACTION BARS - CONFIGURACIÓN ACTUALIZADA
-    -- =========================================================================
-    ["pUiMainBar"] = {
-        dbPath = {"mainbars", "player"}, -- Ruta a la config de la barra principal
-        xKey = "x",
-        yKey = "y",
-        refreshFunc = "PositionActionBars",
-        displayName = "Main Action Bar",
-        actionbar = true
-    },
-    ["MultiBarLeft"] = {
-        dbPath = {"mainbars", "left"}, -- Ruta a la config de la barra izquierda
-        xKey = "x",
-        yKey = "y",
-        refreshFunc = "PositionActionBars",
-        displayName = "Left Action Bar",
-        actionbar = true
-    },
-    ["MultiBarRight"] = {
-        dbPath = {"mainbars", "right"}, -- Ruta a la config de la barra derecha
-        xKey = "x",
-        yKey = "y",
-        refreshFunc = "PositionActionBars",
-        displayName = "Right Action Bar",
-        actionbar = true
-    },
-
-    -- ✅ Bottom action bars support
-    ["MultiBarBottomLeft"] = {
-        dbPath = {"mainbars", "bottom_left"}, -- Ruta a la config de la barra inferior izquierda
-        xKey = "x",
-        yKey = "y",
-        refreshFunc = "PositionActionBars",
-        displayName = "Bottom Left Action Bar",
-        actionbar = true
-    },
-
-    ["MultiBarBottomRight"] = {
-        dbPath = {"mainbars", "bottom_right"}, -- Ruta a la config de la barra inferior derecha
-        xKey = "x",
-        yKey = "y",
-        refreshFunc = "PositionActionBars",
-        displayName = "Bottom Right Action Bar",
-        actionbar = true
-    },
-
-     ["DragonUIPartyMoveFrame"] = {
-        dbPath = {"unitframe", "party"},
-        xKey = "x",
-        yKey = "y",
-        refreshFunc = "RefreshUnitFrames",
-        displayName = "Party Frames",
-        partyframe = true -- Flag para lógica especial
-    },
-
-    -- Stance Bar, Pet Bar, etc. (sin cambios)
-    ["pUiStanceHolder"] = { dbPath = {"additional", "stance"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshStance", displayName = "Stance Bar", independent = true },
-    ["PetActionBarFrame"] = { dbPath = {"additional", "pet"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshPetbar", displayName = "Pet Bar" },
-    ["MicroButtonAndBagsBar"] = { dbPath = {"micromenu"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshMicromenu", displayName = "Micro Menu" },
-    ["ChatFrame1"] = { dbPath = {"chat"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshChat", displayName = "Chat Frame" }
+    ["DragonUIFocusCastbar"] = { dbPath = {"castbar", "focus"}, xKey = "x_position", yKey = "y_position", refreshFunc = "RefreshFocusCastbar", displayName = "Focus Castbar", castbar = true }
 };
 
 -- =================================================================
@@ -269,6 +201,13 @@ local function makeFrameMovable(frame, config)
 
     overlay:SetScript("OnDragStart", function()
         if InCombatLockdown() then return end
+        -- For bags, temporarily restore SetPoint so the button can move cleanly
+        if config and config.bagsFrame then
+            if frame.SetPoint == addon._noop then
+                frame._wasNoop = true
+                frame.SetPoint = UIParent.SetPoint
+            end
+        end
         frame:StartMoving();
     end);
 
@@ -286,60 +225,87 @@ local function makeFrameMovable(frame, config)
             local x, y = getBottomLeftCoordinates(frame)
             setDbValue(config.dbPath, config.xKey, x)
             setDbValue(config.dbPath, config.yKey, y)
-           
+            if addon[config.refreshFunc] then addon[config.refreshFunc]() end
 
-            -- Llamamos a la función de refresco de las barras
-           if addon[config.refreshFunc] then
-                addon[config.refreshFunc]()
-            end
-        
         elseif config.castbar then
             -- === LÓGICA ESPECÍFICA PARA CASTBARS ===
             setDbValue(config.dbPath, "override", true)
             local x, y = getBottomLeftCoordinates(frame)
             setDbValue(config.dbPath, config.xKey, x)
             setDbValue(config.dbPath, config.yKey, y)
-            
-            -- Llamamos a la función de refresco de la castbar específica
-            if addon[config.refreshFunc] then
-                addon[config.refreshFunc]()
-            end
+            if addon[config.refreshFunc] then addon[config.refreshFunc]() end
 
-       elseif config.partyframe then
-           -- === LÓGICA ESPECÍFICA PARA PARTY FRAMES (CORREGIDO) ===
-            -- ✅ CORRECCIÓN: Obtenemos las coordenadas directamente sin la escala
-            -- para evitar el "salto" del marco del grupo.
+        elseif config.micromenu then
+            -- === MICROMENU (guarda por modo actual: normal/grayscale) ===
+            local left = frame:GetLeft() or 0
+            local bottom = frame:GetBottom() or 0
+            local useGrayscale = addon.db and addon.db.profile and addon.db.profile.micromenu and addon.db.profile.micromenu.grayscale_icons
+            local mode = useGrayscale and "grayscale" or "normal"
+            local base = IsAddOnLoaded and (IsAddOnLoaded('ezCollections') and -180 or -166) or -166
+            local xPos = (left - (UIParent:GetRight() or 0)) - base
+            local yPos = bottom
+            if addon.db and addon.db.profile and addon.db.profile.micromenu and addon.db.profile.micromenu[mode] then
+                addon.db.profile.micromenu[mode].x_position = xPos
+                addon.db.profile.micromenu[mode].y_position = yPos
+            end
+            if addon.RefreshMicromenu then addon.RefreshMicromenu() end
+
+        elseif config.bagsFrame then
+            -- === BOLSAS (ancladas a BOTTOMRIGHT del UIParent) ===
+            local right = frame:GetRight() or 0
+            local bottom = frame:GetBottom() or 0
+            local xPos = right - (UIParent:GetRight() or 0)
+            local yPos = bottom - (UIParent:GetBottom() or 0)
+            if addon.db and addon.db.profile and addon.db.profile.bags then
+                addon.db.profile.bags.x_position = xPos
+                addon.db.profile.bags.y_position = yPos
+            end
+            if addon.RefreshBagsPosition then addon.RefreshBagsPosition() end
+
+        elseif config.dbPath and config.dbPath[1] == "auras" then
+            -- === AURAS: Save as TOPRIGHT offsets (ElvUI-style) ===
+            local x = (frame:GetRight() or 0) - (UIParent:GetRight() or 0)
+            local y = (frame:GetTop() or 0) - (UIParent:GetTop() or 0)
+            setDbValue(config.dbPath, config.xKey, x)
+            setDbValue(config.dbPath, config.yKey, y)
+            if addon[config.refreshFunc] then addon[config.refreshFunc]() end
+
+        elseif config.minimap then
+            -- === MINIMAP: Save as TOPRIGHT offsets ===
+            local x = (frame:GetRight() or 0) - (UIParent:GetRight() or 0)
+            local y = (frame:GetTop() or 0) - (UIParent:GetTop() or 0)
+            setDbValue(config.dbPath, config.xKey, x)
+            setDbValue(config.dbPath, config.yKey, y)
+            if addon[config.refreshFunc] then addon[config.refreshFunc]() end
+
+        elseif config.simple then
+            -- === Guardado simple de coordenadas absolutas (BOTTOMLEFT de UIParent) ===
+            local x, y = getBottomLeftCoordinates(frame)
+            if config.dbPath and config.xKey then setDbValue(config.dbPath, config.xKey, x) end
+            if config.dbPath and config.yKey then setDbValue(config.dbPath, config.yKey, y) end
+            if addon[config.refreshFunc] then addon[config.refreshFunc]() end
+
+        elseif config.partyframe then
+            -- === LÓGICA ESPECÍFICA PARA PARTY FRAMES (CORREGIDO) ===
             local x, y = frame:GetLeft(), frame:GetBottom()
-            
-            -- Lógica de guardado simplificada y correcta.
             setDbValue(config.dbPath, "override", true)
             setDbValue(config.dbPath, "anchor", "BOTTOMLEFT")
             setDbValue(config.dbPath, "anchorParent", "UIParent")
             setDbValue(config.dbPath, "anchorPoint", "BOTTOMLEFT")
             setDbValue(config.dbPath, config.xKey, x)
             setDbValue(config.dbPath, config.yKey, y)
-            
-           
-            
-            if addon.RefreshUnitFrames then
-                addon:RefreshUnitFrames()
-            end
+            if addon.RefreshUnitFrames then addon:RefreshUnitFrames() end
 
         elseif config.independent then
-            -- === LÓGICA ESPECÍFICA PARA FRAMES INDEPENDIENTES (STANCE BAR) ===
-            -- Get the current position but don't apply UI scale correction since we're saving screen coordinates
+            -- === FRAMES INDEPENDIENTES (STANCE BAR) ===
             local x, y = frame:GetLeft(), frame:GetBottom()
-
-            -- Enable independent positioning mode
             setDbValue(config.dbPath, "override", true)
             setDbValue(config.dbPath, "anchor", "BOTTOMLEFT")
             setDbValue(config.dbPath, "anchorParent", "BOTTOMLEFT")
             setDbValue(config.dbPath, "anchorFrame", "UIParent")
             setDbValue(config.dbPath, config.xKey, x)
-            -- For stance bar, save Y position to the correct key
             if config.displayName == "Stance Bar" then
                 setDbValue(config.dbPath, "y_position", y)
-                -- Clear the y_offset to prevent double-offsetting
                 setDbValue(config.dbPath, "y_offset", 0)
             else
                 setDbValue(config.dbPath, config.yKey, y)
@@ -349,22 +315,17 @@ local function makeFrameMovable(frame, config)
             -- === LÓGICA GENÉRICA PARA TODOS LOS DEMÁS FRAMES ===
             local x, y
             if config.unitframe then
-                -- Para UnitFrames, usamos coordenadas absolutas y activamos override
-                -- ✅ CORRECCIÓN: Obtenemos las coordenadas directas sin la escala, igual que con el party frame.
                 x, y = frame:GetLeft(), frame:GetBottom()
                 setDbValue(config.dbPath, "override", true)
                 setDbValue(config.dbPath, "anchor", "BOTTOMLEFT")
                 setDbValue(config.dbPath, "anchorParent", "UIParent")
                 setDbValue(config.dbPath, "anchorPoint", "BOTTOMLEFT")
             else
-                -- Para el resto (Pet, etc.), usamos offsets del punto de anclaje
                 local _, _, _, xOfs, yOfs = frame:GetPoint()
                 x, y = xOfs, yOfs
             end
-
             setDbValue(config.dbPath, config.xKey, x)
             setDbValue(config.dbPath, config.yKey, y)
-
         end
 
         -- Notificar a AceConfig para que los sliders se actualicen
@@ -407,6 +368,8 @@ function EditorMode:Show()
     if MultiBarRight then MultiBarRight:Show(); end
     if MultiBarBottomLeft then MultiBarBottomLeft:Show(); end
     if MultiBarBottomRight then MultiBarBottomRight:Show(); end
+    if WorldMapFrame then WorldMapFrame:Show(); end
+
 -- ✅ CORRECCIÓN: Forzar la visibilidad de TODOS los componentes de las castbars.
     -- Esto asegura que se muestren correctamente incluso si fueron ocultadas por el ciclo de vida normal del addon.
     if _G["DragonUIPlayerCastbar"] then _G["DragonUIPlayerCastbar"]:Show() end
@@ -452,13 +415,16 @@ function EditorMode:Show()
         else
             frame = _G[frameName]
         end
-        
+
         if frame then
             makeFrameMovable(frame, config);
             if editableFrames[frame] then
                 editableFrames[frame].overlay:Show();
                 frameCount = frameCount + 1;
             end
+    -- Also reveal new ElvUI-style movers so both systems are visible together
+    if addon and addon.ShowMovers then addon:ShowMovers() end
+
         end
     end
 
@@ -466,20 +432,24 @@ function EditorMode:Show()
 end
 function EditorMode:Hide()
     isEditorActive = false;
-    
+
+    -- Hide new ElvUI-style movers too
+    if addon and addon.HideMovers then addon:HideMovers() end
+
+
     if gridOverlay then gridOverlay:Hide(); end
     if exitEditorButton then exitEditorButton:Hide(); end -- ✅ Ocultar el botón de salida
-    
+
     for frame, data in pairs(editableFrames) do
         data.overlay:Hide();
         frame:SetMovable(data.originalMovable);
         frame:EnableMouse(data.originalMouseEnabled);
     end
-    
+
     -- Refrescar todos los módulos principales al salir
     if addon.PositionActionBars then addon.PositionActionBars(); end
     if addon.RefreshUnitFrames then addon.RefreshUnitFrames(); end
-    
+
     -- ✅ Restaurar visibilidad normal de TODOS los frames
     if TargetFrame and not UnitExists("target") then TargetFrame:Hide(); end
     if FocusFrame and not UnitExists("focus") then FocusFrame:Hide(); end
@@ -521,7 +491,7 @@ function EditorMode:Hide()
         end
     end
 
-   
+
 end
 
 function EditorMode:Toggle()

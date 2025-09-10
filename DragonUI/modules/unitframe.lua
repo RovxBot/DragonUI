@@ -4,7 +4,7 @@ addon.unitframe = unitframe
 
 --[[
 * DragonUI Unit Frame Module
-* 
+*
 * This module handles all unit frame customizations including:
 * - Player, Target, Pet, ToT, and Party frames
 * - Health and power bars
@@ -92,10 +92,10 @@ end
 
 --[[
 * Optimized text truncation function to prevent flickering
-* 
+*
 * Uses binary search algorithm to efficiently find the optimal truncation point,
 * minimizing the number of SetText calls which reduces UI flickering
-* 
+*
 * @param textFrame FontString - The text frame object to modify
 * @param name string - The original text to display
 * @param maxWidth number - The maximum width in pixels for the text
@@ -160,7 +160,7 @@ end
 * Format status text for health/power bars based on configuration options
 *
 * @param current number - Current value (health/power)
-* @param maximum number - Maximum value (max health/power) 
+* @param maximum number - Maximum value (max health/power)
 * @param textFormat string - Format type: 'numeric', 'percentage', 'both', or 'formatted'
 * @param useBreakup boolean - Whether to format large numbers with commas/periods
 * @param frameType string - Type of unit frame (player, target, etc.)
@@ -447,7 +447,7 @@ local function setDefaultValues()
 end
 
 -- Function to retrieve configuration values adapted for DragonUI unit frames
--- @param info table - Configuration key path 
+-- @param info table - Configuration key path
 -- @return any - The stored configuration value or default if not found
 local function getOption(info)
     local key = info[1]
@@ -2550,7 +2550,7 @@ function unitframe.HookVertexColor()
             FocusFrameHealthBar:GetStatusBarTexture():SetDrawLayer("BORDER", 1)
         end
 
-        -- Hook focus events for consistent color updates  
+        -- Hook focus events for consistent color updates
         FocusFrame:HookScript('OnEvent', function(self, event, arg1)
             if event == 'PARTY_MEMBERS_CHANGED' or event == 'PARTY_MEMBER_ENABLE' or event == 'PARTY_MEMBER_DISABLE' then
                 -- SIMPLE: Solo aplicar colores sin logging ni delays complejos
@@ -3097,7 +3097,7 @@ function unitframe.HookPlayerStatus()
             PlayerStatusTexture:SetVertexColor(1.0, 0.88, 0.25, 1.0)
             PlayerStatusTexture:SetAlpha(1.0)
         elseif PlayerFrame.onHateList then
-            -- FIXED: Show DragonUI custom hate list glow texture  
+            -- FIXED: Show DragonUI custom hate list glow texture
             PlayerStatusTexture:Show()
             PlayerStatusTexture:SetVertexColor(1.0, 0, 0, 1.0)
             frame.PlayerFrameDeco:Hide()
@@ -5035,14 +5035,14 @@ function unitframe.ChangeFocusToT()
         frame.FocusFrameToTBorder = border
     end
 
-    -- Position name text 
+    -- Position name text
     if FocusFrameToTTextureFrameName then
         FocusFrameToTTextureFrameName:ClearAllPoints()
         FocusFrameToTTextureFrameName:SetPoint('LEFT', FocusFrameToTPortrait, 'RIGHT', 1 + 1, 2 + 12 - 1 + fotDelta)
         FocusFrameToTTextureFrameName:SetDrawLayer('BORDER', 1)
     end
 
-    -- Position dead/unconscious text 
+    -- Position dead/unconscious text
     if FocusFrameToTTextureFrameDeadText then
         FocusFrameToTTextureFrameDeadText:ClearAllPoints()
         FocusFrameToTTextureFrameDeadText:SetPoint('CENTER', FocusFrameToTHealthBar, 'CENTER', 0, 0)
@@ -5053,7 +5053,7 @@ function unitframe.ChangeFocusToT()
         FocusFrameToTTextureFrameUnconsciousText:SetPoint('CENTER', FocusFrameToTHealthBar, 'CENTER', 0, 0)
     end
 
-    -- Position debuffs 
+    -- Position debuffs
     if FocusFrameToTDebuff1 then
         FocusFrameToTDebuff1:SetPoint('TOPLEFT', FocusFrameToT, 'TOPRIGHT', 5, -20)
     end
@@ -5603,7 +5603,7 @@ if not unitframe.PartyEventFrameMain then
     unitframe.PartyEventFrameMain = partyMainEventFrame
 end
 
--- Party frame options 
+-- Party frame options
 local optionsParty = CreateUnitFrameOptions('Party', 'Party frame settings', 'party')
 
 -- Party frames need additional layout options not required by individual unit frames
@@ -5650,7 +5650,7 @@ local function GetPartyFrameType(current)
     if GetNumPartyMembers() == 0 then
         return nil
     end
-    
+
     for i = 1, 4 do
         if UnitExists("party" .. i) then
             local partyHealth = UnitHealth("party" .. i)
@@ -5791,7 +5791,7 @@ end
 function unitframe.ConfigurePartyFrameStructure(i)
     local pf = _G['PartyMemberFrame' .. i]
     if not pf then return end
-    
+
     pf:SetParent(unitframe.PartyMoveFrame)
     pf:SetSize(120, 53)
     pf:SetHitRectInsets(0, 0, 0, 12)
@@ -6007,7 +6007,7 @@ function unitframe.SetupPartyFrameIcons(i)
             notPresentIcon:SetPoint('LEFT', pf, 'RIGHT', 2, -2)
         end
     end
-    
+
     updateSmallIcons()
     pf.updateSmallIcons = updateSmallIcons -- Store the function for later use
 end
@@ -6050,7 +6050,7 @@ end
 function unitframe.SetupPartyFrameEvents(i)
     local pf = _G['PartyMemberFrame' .. i]
     if not pf then return end
-    
+
     local healthbar = _G['PartyMemberFrame' .. i .. 'HealthBar']
     local manabar = _G['PartyMemberFrame' .. i .. 'ManaBar']
 
@@ -7326,7 +7326,7 @@ local eventFrame = CreateFrame("Frame")
 --[[
 * Main event handler for unit frame updates
 * Processes events and routes them to appropriate handler functions
-* 
+*
 * @param event string - The event name that triggered this handler
 * @param arg1 string - First argument (usually the unit ID)
 --]]
@@ -7447,7 +7447,7 @@ function eventFrame:OnEvent(event, arg1)
             end
         elseif arg1 == "focus" then
             unitframe.UpdateFocusText()
-        
+
         end
     end
 end
@@ -8066,4 +8066,170 @@ profileCallbackFrame:SetScript("OnEvent", function(self, event, addonName)
         self:UnregisterEvent("ADDON_LOADED")
     end
 end)
+
+
+-- =============================================================================
+-- MOVERS: Player, Target, Target's Target, Party, Raid (basic)
+-- =============================================================================
+do
+    local function makeDefaultPoint(f)
+        if not f or not f.GetPoint then return {'CENTER', UIParent, 'CENTER', 0, 0} end
+        local p, rel, rp, x, y = f:GetPoint(1)
+        p = p or 'CENTER'; rp = rp or p; x = x or 0; y = y or 0
+        rel = rel or UIParent
+        return { p, rel, rp, x, y }
+    end
+
+    local function ensureUnitFrameMovers()
+        if InCombatLockdown() then return end
+        -- Player
+        if _G.PlayerFrame and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.player) then
+            addon:CreateMover(_G.PlayerFrame, 'player', 'Player', makeDefaultPoint(_G.PlayerFrame))
+            _G.PlayerFrame:HookScript('OnShow', function() if addon and addon.ApplyMover then addon:ApplyMover('player') end end)
+        end
+        -- Target
+        if _G.TargetFrame and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.target) then
+            addon:CreateMover(_G.TargetFrame, 'target', 'Target', makeDefaultPoint(_G.TargetFrame))
+            _G.TargetFrame:HookScript('OnShow', function() if addon and addon.ApplyMover then addon:ApplyMover('target') end end)
+        end
+        -- Target of Target
+        if _G.TargetFrameToT and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.tot) then
+            addon:CreateMover(_G.TargetFrameToT, 'tot', "Target's Target", makeDefaultPoint(_G.TargetFrameToT))
+            _G.TargetFrameToT:HookScript('OnShow', function() if addon and addon.ApplyMover then addon:ApplyMover('tot') end end)
+        end
+
+        -- Pet
+        if _G.PetFrame then
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.pet) then
+                addon:CreateMover(_G.PetFrame, 'pet', 'Pet', makeDefaultPoint(_G.PetFrame))
+                _G.PetFrame:HookScript('OnShow', function() if addon and addon.ApplyMover then addon:ApplyMover('pet') end end)
+            else
+                if addon.Movers.registry.pet.frame ~= _G.PetFrame then
+                    addon.Movers.registry.pet.frame = _G.PetFrame
+                    if addon.ApplyMover then addon:ApplyMover('pet') end
+                end
+            end
+            if unitframe._petPlaceholder then unitframe._petPlaceholder:Hide() end
+        else
+            if not unitframe._petPlaceholder then
+                local ph = CreateFrame('Frame', 'DragonUIPetPlaceholder', UIParent)
+                ph:SetSize(125, 46)
+                ph:SetPoint('CENTER', UIParent, 'CENTER', 0, 0)
+                ph:SetFrameStrata('BACKGROUND')
+                unitframe._petPlaceholder = ph
+            end
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.pet) then
+                addon:CreateMover(unitframe._petPlaceholder, 'pet', 'Pet', makeDefaultPoint(unitframe._petPlaceholder))
+            end
+            unitframe._petPlaceholder:Hide()
+        end
+
+        -- Focus
+        if _G.FocusFrame then
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.focus) then
+                addon:CreateMover(_G.FocusFrame, 'focus', 'Focus', makeDefaultPoint(_G.FocusFrame))
+                _G.FocusFrame:HookScript('OnShow', function() if addon and addon.ApplyMover then addon:ApplyMover('focus') end end)
+            else
+                if addon.Movers.registry.focus.frame ~= _G.FocusFrame then
+                    addon.Movers.registry.focus.frame = _G.FocusFrame
+                    if addon.ApplyMover then addon:ApplyMover('focus') end
+                end
+            end
+            if unitframe._focusPlaceholder then unitframe._focusPlaceholder:Hide() end
+        else
+            if not unitframe._focusPlaceholder then
+                local ph = CreateFrame('Frame', 'DragonUIFocusPlaceholder', UIParent)
+                ph:SetSize(232, 100)
+                ph:SetPoint('CENTER', UIParent, 'CENTER', 0, 60)
+                ph:SetFrameStrata('BACKGROUND')
+                unitframe._focusPlaceholder = ph
+            end
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.focus) then
+                addon:CreateMover(unitframe._focusPlaceholder, 'focus', 'Focus', makeDefaultPoint(unitframe._focusPlaceholder))
+            end
+            unitframe._focusPlaceholder:Hide()
+        end
+
+        -- Focus Target
+        if _G.FocusFrameToT then
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.fot) then
+                addon:CreateMover(_G.FocusFrameToT, 'fot', 'Focus Target', makeDefaultPoint(_G.FocusFrameToT))
+                _G.FocusFrameToT:HookScript('OnShow', function() if addon and addon.ApplyMover then addon:ApplyMover('fot') end end)
+            else
+                if addon.Movers.registry.fot.frame ~= _G.FocusFrameToT then
+                    addon.Movers.registry.fot.frame = _G.FocusFrameToT
+                    if addon.ApplyMover then addon:ApplyMover('fot') end
+                end
+            end
+            if unitframe._focustotPlaceholder then unitframe._focustotPlaceholder:Hide() end
+        else
+            if not unitframe._focustotPlaceholder then
+                local ph = CreateFrame('Frame', 'DragonUIFocusToTPlaceholder', UIParent)
+                ph:SetSize(125, 46)
+                ph:SetPoint('CENTER', UIParent, 'CENTER', 0, 20)
+                ph:SetFrameStrata('BACKGROUND')
+                unitframe._focustotPlaceholder = ph
+            end
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.fot) then
+                addon:CreateMover(unitframe._focustotPlaceholder, 'fot', 'Focus Target', makeDefaultPoint(unitframe._focustotPlaceholder))
+            end
+            unitframe._focustotPlaceholder:Hide()
+        end
+        -- Party container (our custom wrapper) – ensure it exists so we can place it even if not in a party
+        if not unitframe.PartyMoveFrame and unitframe.CreatePartyContainer then
+            unitframe.CreatePartyContainer()
+        end
+        if unitframe.PartyMoveFrame and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.party) then
+            addon:CreateMover(unitframe.PartyMoveFrame, 'party', 'Party', makeDefaultPoint(unitframe.PartyMoveFrame))
+        end
+        -- Raid: if Blizzard pullout exists, bind mover to it; otherwise create a placeholder so users can pre-place it
+        if _G.RaidPullout1 then
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.raid) then
+                addon:CreateMover(_G.RaidPullout1, 'raid', 'Raid', makeDefaultPoint(_G.RaidPullout1))
+            else
+                -- Swap mover to the real frame if previously registered against a placeholder
+                if addon.Movers.registry.raid.frame ~= _G.RaidPullout1 then
+                    addon.Movers.registry.raid.frame = _G.RaidPullout1
+                    if addon.ApplyMover then addon:ApplyMover('raid') end
+                end
+            end
+            if unitframe._raidPlaceholder then unitframe._raidPlaceholder:Hide() end
+        else
+            if not unitframe._raidPlaceholder then
+                local ph = CreateFrame('Frame', 'DragonUIRaidPlaceholder', UIParent)
+                ph:SetSize(300, 180)
+                ph:SetPoint('CENTER', UIParent, 'CENTER', 0, 0)
+                ph:SetFrameStrata('BACKGROUND')
+                local t = ph:CreateTexture(nil, 'BACKGROUND')
+                t:SetAllPoints()
+                t:SetColorTexture(0.1, 0.6, 0.1, 0.12)
+                local txt = ph:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
+                txt:SetPoint('CENTER')
+                txt:SetText('Raid (placeholder)')
+                unitframe._raidPlaceholder = ph
+            end
+            if not (addon.Movers and addon.Movers.registry and addon.Movers.registry.raid) then
+                addon:CreateMover(unitframe._raidPlaceholder, 'raid', 'Raid', makeDefaultPoint(unitframe._raidPlaceholder))
+            end
+            -- Keep placeholder hidden; the mover handle will be visible during /duimove
+            unitframe._raidPlaceholder:Hide()
+        end
+    end
+
+    -- Run once world is loaded, and when raid frames may appear
+    local ev = CreateFrame('Frame')
+    ev:RegisterEvent('PLAYER_ENTERING_WORLD')
+    ev:RegisterEvent('RAID_ROSTER_UPDATE')
+    ev:RegisterEvent('PARTY_MEMBERS_CHANGED')
+    ev:RegisterEvent('PLAYER_REGEN_ENABLED')
+    ev:RegisterEvent('PLAYER_FOCUS_CHANGED')
+    ev:RegisterEvent('UNIT_PET')
+    ev:SetScript('OnEvent', function(self, event)
+        if event == 'PLAYER_REGEN_ENABLED' then
+            ensureUnitFrameMovers()
+            return
+        end
+        ensureUnitFrameMovers()
+    end)
+end
 

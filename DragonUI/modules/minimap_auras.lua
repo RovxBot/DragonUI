@@ -14,19 +14,46 @@ local TempEnchant2 = TempEnchant2;
 local UnitHasVehicleUI = UnitHasVehicleUI;
 local hooksecurefunc = hooksecurefunc;
 
+
+-- Provide a dummy holder frame to act as a mover handle in Editor Mode
+if not _G.DragonUIAuraMover then
+    local holder = CreateFrame('Frame', 'DragonUIAuraMover', UIParent)
+    holder:SetSize(36, 36)
+    holder:SetPoint('TOPRIGHT', Minimap, 'TOPLEFT', -80, 24) -- initial position matches default offsets
+    holder:Hide() -- only used as an editor handle
+end
+
 local AuraFrameMixin = {};
 
 -- Function to refresh the position of auras based on database settings
 function addon:RefreshAuraPosition()
     if not TempEnchant1 then return end
 
-    -- Read horizontal and vertical offsets from the database
-    local x_offset = (addon.db.profile.map.auras and addon.db.profile.map.auras.x_offset) or -80
-    local y_offset = (addon.db.profile.map.auras and addon.db.profile.map.auras.y_offset) or 24
-
-    -- Reposition the main enchant frame
-    TempEnchant1:ClearAllPoints()
-    TempEnchant1:SetPoint('TOPRIGHT', Minimap, 'TOPLEFT', x_offset, y_offset)
+    -- If our mover manages auras, do not override its point
+    if addon.Movers and addon.Movers.registry and addon.Movers.registry['auras'] then
+        -- Just ensure dependent frames are positioned relative to TempEnchant1
+    else
+        local aurasDb = addon.db and addon.db.profile and addon.db.profile.auras
+        if aurasDb and type(aurasDb.x_position) == "number" and type(aurasDb.y_position) == "number" then
+            -- Absolute position via Editor Mode (Top-Right anchor for ElvUI-like layout)
+            TempEnchant1:ClearAllPoints()
+            TempEnchant1:SetPoint('TOPRIGHT', UIParent, 'TOPRIGHT', aurasDb.x_position, aurasDb.y_position)
+            if _G.DragonUIAuraMover then
+                _G.DragonUIAuraMover:ClearAllPoints()
+                _G.DragonUIAuraMover:SetPoint('TOPRIGHT', UIParent, 'TOPRIGHT', aurasDb.x_position, aurasDb.y_position)
+            end
+        else
+            -- Legacy relative offsets from the minimap
+            local x_offset = (addon.db.profile.map.auras and addon.db.profile.map.auras.x_offset) or -80
+            local y_offset = (addon.db.profile.map.auras and addon.db.profile.map.auras.y_offset) or 24
+            TempEnchant1:ClearAllPoints()
+            TempEnchant1:SetPoint('TOPRIGHT', Minimap, 'TOPLEFT', x_offset, y_offset)
+            if _G.DragonUIAuraMover then
+                _G.DragonUIAuraMover:ClearAllPoints()
+                _G.DragonUIAuraMover:SetPoint('TOPRIGHT', Minimap, 'TOPLEFT', x_offset, y_offset)
+            end
+        end
+    end
 
     -- Reposition secondary enchant and consolidated buffs frames
     TempEnchant2:ClearAllPoints()
@@ -65,14 +92,14 @@ function AuraFrameMixin:UpdateBuffsAnchor()
 	local previousBuff, aboveBuff
 	local numBuffs = 0
 	local numTotal = BuffFrame.numEnchants
-	
+
 	for index=1, BUFF_ACTUAL_DISPLAY do
 		local buff = _G['BuffButton'..index]
 		if not buff then return end
-		
+
 		numBuffs = numBuffs + 1
 		numTotal = numTotal + 1
-        
+
 		buff:ClearAllPoints()
 		if numBuffs == 1 then
 			AuraFrameMixin:UpdateFirstButton(buff)
@@ -132,7 +159,7 @@ function AuraFrameMixin:UpdateCollapseAndExpandButtonAnchor()
 	atlas(highlight, 'ui-hud-aura-arrow-invert')
 	highlight:SetAlpha(.2)
 	highlight:SetBlendMode('ADD')
-	
+
 	arrow.collapse = false
 	arrow:SetScript('OnClick',function(self)
 		self.collapse = not self.collapse
@@ -163,6 +190,17 @@ end
 -- Replace Blizzard's buff update functions with our custom ones for full control
 BuffFrame_UpdateAllBuffAnchors = AuraFrameMixin.UpdateBuffsAnchor
 DebuffButton_UpdateAnchors = AuraFrameMixin.UpdateDeBuffsAnchor
+
+-- Register ElvUI-style mover for auras (use TempEnchant1 as the anchor)
+if addon.CreateMover and TempEnchant1 then
+    -- Default near minimap top-left like legacy behaviour
+    addon:CreateMover(TempEnchant1, 'auras', 'Auras', {'TOPRIGHT', Minimap, 'TOPLEFT', -80, 24})
+end
+
+-- Backwards-compatible alias for options sliders
+function addon.RefreshMinimapAuras()
+    addon:RefreshAuraPosition()
+end
 
 mixin(addon._map, AuraFrameMixin);
 

@@ -1,6 +1,8 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <!-- Actionbar modules -->
     <Script file="noop.lua"/>
+    <Script file="mover_manager.lua"/>
+
     <Script file="buttons.lua"/>
     <Script file="cooldowns.lua"/>
     <Script file="mainbars.lua"/>
@@ -10,7 +12,7 @@
     <Script file="multicast.lua"/>
     <Script file="micromenu.lua"/>
 
-    
+
 
 
     <!-- Minimap modules -->
@@ -36,4 +38,11 @@
 
     <!-- Conflict Detection module -->
     <Script file="compatibility.lua"/>
+
+    <!-- UI Skins module -->
+    <Script file="skins_ui.lua"/>
+    <Script file="skins_worldmap.lua"/>
+    <Script file="skins_talents.lua"/>
+
+
 </Ui>

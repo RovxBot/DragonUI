@@ -97,7 +97,7 @@ local defaults = {
                 icon_spacing = 15 -- Gap between icons
             },
 
-            -- Normal colored icons configuration  
+            -- Normal colored icons configuration
             normal = {
                 scale_menu = 0.9,
                 x_position = -113,
@@ -292,6 +292,19 @@ local defaults = {
             size_y = 120 -- Alto del chat
         },
 
+        -- UI SKINS SETTINGS
+        skins = {
+            character = true,
+            friends = true,
+            spellbook = true,
+            questlog = true,
+            closebuttons = true,
+            talents = true,
+            worldmap_small = true,
+            worldmap_skin = true,
+        },
+
+
         -- UNIT FRAMES SETTINGS
         unitframe = {
             scale = 1,
@@ -402,7 +415,7 @@ addon.db = {
     profile = addon.defaults and addon.defaults.profile or {}
 };
 
--- Function to recursively copy tables  
+-- Function to recursively copy tables
 local function deepCopy(source, target)
     for key, value in pairs(source) do
         if type(value) == "table" then

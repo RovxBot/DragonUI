@@ -195,6 +195,22 @@ function MainMenuBarMixin:actionbar_art_setup()
     UpdateGryphonStyle()
 end
 
+
+-- Register movers for XP and Reputation bars
+local function RegisterStatusBarMovers()
+    if not addon.CreateMover then return end
+
+    if _G.MainMenuExpBar and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.xpbar) then
+        addon:CreateMover(_G.MainMenuExpBar, 'xpbar', 'XP Bar', {'BOTTOM', UIParent, 'BOTTOM', 0, 6}, {strictSize = true})
+        _G.MainMenuExpBar:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('xpbar') end end)
+    end
+
+    if _G.ReputationWatchBar and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.repbar) then
+        addon:CreateMover(_G.ReputationWatchBar, 'repbar', 'Reputation Bar', {'BOTTOM', UIParent, 'BOTTOM', 0, 22}, {strictSize = true})
+        _G.ReputationWatchBar:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('repbar') end end)
+    end
+end
+
 function MainMenuBarMixin:update_main_bar_background()
     local alpha = (addon.db and addon.db.profile and addon.db.profile.buttons and addon.db.profile.buttons.hide_main_bar_background) and 0 or 1
 
@@ -537,6 +553,10 @@ hooksecurefunc('ReputationWatchBar_Update',function()
 		ReputationWatchStatusBar:SetClearPoint('TOPLEFT', ReputationWatchBar, 0, 3)
 		ReputationWatchStatusBarText:SetClearPoint('CENTER', ReputationWatchStatusBar, 'CENTER', 0, old and 0 or 1);
 		ReputationWatchStatusBarBackground:SetAllPoints(ReputationWatchStatusBar)
+		-- Re-apply mover position if active
+		if addon and addon.Movers and addon.Movers.registry and addon.Movers.registry.repbar and addon.ApplyMover then
+			addon:ApplyMover('repbar')
+		end
 	end
 end)
 
@@ -1104,6 +1124,47 @@ local function InitializeActionBarVisibility()
     end)
 end
 
+
+-- ============================================================================
+-- Movers for secondary action bars (Bottom Left/Right, Right, Right 2)
+-- ============================================================================
+function addon.RegisterActionBarMovers()
+    if not addon.CreateMover then return end
+
+    local function makeDefault(p, rel, rp, x, y)
+        return { p, rel or UIParent, rp or p, x or 0, y or 0 }
+    end
+
+    -- Bottom Left
+    if _G.MultiBarBottomLeft and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.bottomleft) then
+        addon:CreateMover(_G.MultiBarBottomLeft, 'bottomleft', 'Bottom Left Bar', makeDefault('BOTTOM', UIParent, 'BOTTOM', 0, 120))
+        _G.MultiBarBottomLeft:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('bottomleft') end end)
+    end
+
+    -- Bottom Right
+    if _G.MultiBarBottomRight and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.bottomright) then
+        -- Prefer relative default above bottom-left if available
+        local rel = _G.MultiBarBottomLeft or UIParent
+        local default = rel == UIParent and makeDefault('BOTTOM', UIParent, 'BOTTOM', 0, 170) or {'BOTTOMLEFT', rel, 'TOPLEFT', 0, 8}
+        addon:CreateMover(_G.MultiBarBottomRight, 'bottomright', 'Bottom Right Bar', default)
+        _G.MultiBarBottomRight:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('bottomright') end end)
+    end
+
+    -- Right bar
+    if _G.MultiBarRight and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.right) then
+        addon:CreateMover(_G.MultiBarRight, 'right', 'Right Bar', makeDefault('RIGHT', UIParent, 'RIGHT', -5, -70))
+        _G.MultiBarRight:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('right') end end)
+    end
+
+    -- Right 2 bar (Blizzard: MultiBarLeft)
+    if _G.MultiBarLeft and not (addon.Movers and addon.Movers.registry and addon.Movers.registry.right2) then
+        local rel = _G.MultiBarRight
+        local default = rel and {'RIGHT', rel, 'LEFT', -5, 0} or makeDefault('RIGHT', UIParent, 'RIGHT', -52, -70)
+        addon:CreateMover(_G.MultiBarLeft, 'right2', 'Right Bar 2', default)
+        _G.MultiBarLeft:HookScript('OnShow', function() if addon.ApplyMover then addon:ApplyMover('right2') end end)
+    end
+end
+
 -- Export functions for external use
 addon.UpdateActionBarVisibility = UpdateActionBarVisibility
 addon.InitializeActionBarVisibility = InitializeActionBarVisibility
@@ -1118,6 +1179,14 @@ function MainMenuBarMixin:initialize()
 	if addon.db and addon.db.profile then
 		addon.RefreshActionBarVisibility();
 	end
+
+		-- Register movers for status bars (XP/Rep) and apply if present
+		RegisterStatusBarMovers()
+		if addon.ApplyMover and addon.Movers and addon.Movers.registry then
+			if addon.Movers.registry.xpbar then addon:ApplyMover('xpbar') end
+			if addon.Movers.registry.repbar then addon:ApplyMover('repbar') end
+		end
+
 end
 addon.pUiMainBar = pUiMainBar;
 
@@ -1206,6 +1275,16 @@ function addon.RefreshMainbars()
     UpdateGryphonStyle()
 
     -- Update XP bar textures
+            -- Register movers for secondary bars once frames exist
+            if addon.RegisterActionBarMovers then addon.RegisterActionBarMovers() end
+            if addon.ApplyMover and addon.Movers and addon.Movers.registry then
+                if addon.Movers.registry.bottomleft then addon:ApplyMover('bottomleft') end
+                if addon.Movers.registry.bottomright then addon:ApplyMover('bottomright') end
+                if addon.Movers.registry.right then addon:ApplyMover('right') end
+                if addon.Movers.registry.right2 then addon:ApplyMover('right2') end
+            end
+
+
     if MainMenuExpBar then
         MainMenuExpBar:SetStatusBarTexture(db_style.xpbar == 'old' and "Interface\\MainMenuBar\\UI-XP-Bar" or "Interface\\MainMenuBar\\UI-ExperienceBar")
     end
@@ -1242,6 +1321,11 @@ initializationFrame:SetScript("OnEvent", function(self, event)
         end
 
         -- Initialise hover/combat visibility system once
+        -- Register ElvUI-style mover for the main action bar (default bottom center)
+        if addon.CreateMover and addon.pUiMainBar then
+            addon:CreateMover(addon.pUiMainBar, 'mainbar', 'Player Action Bar', {'BOTTOM', UIParent, 'BOTTOM', 0, 75})
+        end
+
         if addon.InitializeActionBarVisibility then
             addon.InitializeActionBarVisibility()
         end
