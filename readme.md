@@ -13,14 +13,50 @@ A personal project bringing Dragonflight UI aesthetics to WotLK 3.3.5a.
 
 ## Features
 
-*   **Unit Frames:** Player, Target, Focus, and Party frames with ToT/ToF support
-*   **Micro Menu:** Enhanced design with player portrait and faction-based PvP indicators
-*   **Cast Bars:** Improved casting bars with modern styling
-*   **Minimap:** Redesigned with better integration and customization options
-*   **Editor Mode (WIP):** Easy drag-and-drop system for repositioning frames and UI elements
-*   **Comprehensive Configuration:** Extensive in-game options panel with customization for positioning, scaling and visual elements
-*   **Profile Management:** Save and switch between different UI configurations per character
-*   **Compatibility Manager:** Automatic detection and coordination with other addons for seamless integration
+- Action Bars
+  - Custom layouts per bar: rows, columns, and buttons shown (per‑bar)
+  - Independent movers for Bottom Left, Bottom Right, Right and Right 2 bars
+  - Per‑bar scale and manual override positions with profile saving
+  - Smart positioning that adapts to main bar height and background visibility
+  - Hover and combat visibility per bar (show on hover and/or in combat)
+  - Optional main bar art/background hiding and multiple gryphon styles (old/new/flying; faction aware)
+  - Page buttons restyled with page number; validation helper to detect missing buttons
+
+- Main Bar, XP & Reputation
+  - Dragonflight‑style XP bar with exhaustion tick and proper fill prediction
+  - Reputation bar with automatic offset above XP when both are shown
+  - Precise movers for XP and Reputation bars (strict‑size overlays)
+
+- Cast Bars
+  - Modern styled cast bars (player supported) with a precise mover
+
+- Micro Menu & Bags
+  - Redesigned micro menu with player portrait and faction‑aware PvP indicators
+  - Configurable scale and icon spacing; grayscale or coloured icon modes
+  - Micro menu mover with strict‑size overlay for accurate placement
+  - Bags bar enhancements including Keyring support and a compact toggle arrow
+
+- Minimap
+  - Modern skinning and layout with a built‑in mover
+
+- World Map
+  - Lightweight skin with symmetric backdrop in small/large modes
+  - Reskinned close button and corrected offsets; small‑map toggle support
+  - World Map mover with saved position support
+
+- Movers / Edit Mode
+  - ElvUI‑like mover system: grid overlay, snap‑to‑grid, save/restore per profile
+  - Built‑in movers for minimap, micromenu, bags bar, chat and world map
+  - Strict‑size option so handles match the exact frame size when needed
+  - Slash commands: `/duimove` to show movers, `/duilock` to hide
+
+- Options & Profiles
+  - Separate load‑on‑demand options addon (DragonUI_Options)
+  - Comprehensive settings for positioning, scaling, layouts and styles
+  - Profile support to save and switch configurations per character
+
+- Compatibility
+  - Sensible defaults and hooks designed to coexist with common addons
 
 ## Installation
 

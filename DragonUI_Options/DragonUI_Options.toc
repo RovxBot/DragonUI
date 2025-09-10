@@ -1,0 +1,30 @@
+## Interface: 30300
+## Title: DragonUI Options
+## Notes: Options UI for DragonUI
+## RequiredDeps: DragonUI
+## LoadOnDemand: 1
+
+## Version: dev-workspace
+
+options\common.lua
+options\helpers.lua
+options\general.lua
+options\actionbars.lua
+options\micromenu.lua
+options\bags.lua
+options\castbars_player.lua
+options\castbars_target.lua
+options\castbars_focus.lua
+options\castbars.lua
+options\unitframes.lua
+options\xprepbar.lua
+options\gryphons.lua
+options\additional.lua
+options\questtracker.lua
+options\minimap.lua
+options\times.lua
+options\chat.lua
+options\skins.lua
+
+options\init.lua
+
