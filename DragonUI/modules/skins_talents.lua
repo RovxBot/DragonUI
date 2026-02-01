@@ -74,7 +74,9 @@ local function CreateMainFrame()
 
     -- Small scale toggle (persist not implemented; just local for session)
     local small = CreateFrame('CheckButton', nil, f, 'UICheckButtonTemplate')
-    small.text:SetText('Small')
+    local smallText = small:CreateFontString(nil, 'OVERLAY', 'GameFontNormalSmall')
+    smallText:SetPoint('LEFT', small, 'RIGHT', 2, 0)
+    smallText:SetText('Small')
     small:SetPoint('BOTTOMLEFT', 50, 17)
     small:SetScript('OnClick', function(self) f:SetScale(self:GetChecked() and 0.8 or 1.0) end)
 
