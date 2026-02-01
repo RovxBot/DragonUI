@@ -948,8 +948,10 @@ local function SetupActionBarHoverDetection(barName, frame)
 
     -- Frame-level hover
     frame:SetScript("OnEnter", function()
+        -- FIXED: Use AceTimer CancelTimer instead of :Cancel() for 3.3.5a compatibility
         if hoverTimers[barName] then
-            hoverTimers[barName]:Cancel(); hoverTimers[barName] = nil
+            addon.core:CancelTimer(hoverTimers[barName], true)
+            hoverTimers[barName] = nil
         end
         if not addon.visibilityStates[barName].hovered then
             addon.visibilityStates[barName].hovered = true
@@ -975,8 +977,10 @@ local function SetupActionBarHoverDetection(barName, frame)
             local btn = _G[buttonPrefix .. i]
             if btn and not btn.__DragonUI_HoverHooked then
                 btn:HookScript("OnEnter", function()
+                    -- FIXED: Use AceTimer CancelTimer instead of :Cancel() for 3.3.5a compatibility
                     if hoverTimers[barName] then
-                        hoverTimers[barName]:Cancel(); hoverTimers[barName] = nil
+                        addon.core:CancelTimer(hoverTimers[barName], true)
+                        hoverTimers[barName] = nil
                     end
                     addon.visibilityStates[barName].hovered = true
                     addon.UpdateActionBarVisibility(barName, frame)
