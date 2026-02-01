@@ -319,7 +319,8 @@ local function showGrid()
     grid.lines = {}
     for x = 0, math.floor(w), step do
         local t = grid:CreateTexture(nil, 'BACKGROUND')
-        t:SetColorTexture(1,1,1,0.05)
+        -- FIXED: Use SetTexture instead of SetColorTexture for 3.3.5a compatibility
+        t:SetTexture(1,1,1,0.05)
         t:SetPoint('TOPLEFT', DragonUIParent, 'TOPLEFT', x, 0)
         t:SetPoint('BOTTOMLEFT', DragonUIParent, 'BOTTOMLEFT', x, 0)
         t:SetWidth(1)
@@ -327,7 +328,8 @@ local function showGrid()
     end
     for y = 0, math.floor(h), step do
         local t = grid:CreateTexture(nil, 'BACKGROUND')
-        t:SetColorTexture(1,1,1,0.05)
+        -- FIXED: Use SetTexture instead of SetColorTexture for 3.3.5a compatibility
+        t:SetTexture(1,1,1,0.05)
         t:SetPoint('TOPLEFT', DragonUIParent, 'TOPLEFT', 0, -y)
         t:SetPoint('TOPRIGHT', DragonUIParent, 'TOPRIGHT', 0, -y)
         t:SetHeight(1)

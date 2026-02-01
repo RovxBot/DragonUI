@@ -8202,7 +8202,8 @@ do
                 ph:SetFrameStrata('BACKGROUND')
                 local t = ph:CreateTexture(nil, 'BACKGROUND')
                 t:SetAllPoints()
-                t:SetColorTexture(0.1, 0.6, 0.1, 0.12)
+                -- FIXED: Use SetTexture instead of SetColorTexture for 3.3.5a compatibility
+                t:SetTexture(0.1, 0.6, 0.1, 0.12)
                 local txt = ph:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
                 txt:SetPoint('CENTER')
                 txt:SetText('Raid (placeholder)')
