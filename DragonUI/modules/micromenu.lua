@@ -974,12 +974,12 @@ local function setupMicroButtons(xOffset)
     -- Position is controlled by new mover if present; otherwise keep legacy default
     if not (addon.Movers and addon.Movers.registry and addon.Movers.registry['micromenu']) then
         menu:ClearAllPoints()
-        menu:SetPoint('BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, -53)
+        menu:SetPoint('BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, 8)
     end
 
     -- Register ElvUI-style mover for micro menu
     if addon.CreateMover then
-        addon:CreateMover(menu, 'micromenu', 'Micro Menu', {'BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, -53}, {strictSize = true})
+        addon:CreateMover(menu, 'micromenu', 'Micro Menu', {'BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, 8}, {strictSize = true})
     end
 
     for _,button in pairs(MICRO_BUTTONS) do
@@ -1337,7 +1337,7 @@ function addon.RefreshMicromenuPosition()
 	if not (addon.Movers and addon.Movers.registry and addon.Movers.registry['micromenu']) then
 		-- Legacy fallback positioning only when mover not active
 		microMenu:ClearAllPoints()
-		microMenu:SetPoint('BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, -53)
+		microMenu:SetPoint('BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, 8)
 	end
 	-- Enlarge the holder so it's easy to drag in Edit Mode
 	local count = 0; for _,_ in ipairs(MICRO_BUTTONS) do count = count + 1 end
@@ -1449,7 +1449,7 @@ function addon.RefreshMicromenu()
 	if not (addon.Movers and addon.Movers.registry and addon.Movers.registry['micromenu']) then
 		-- Legacy fallback positioning only when mover not active
 		menu:ClearAllPoints()
-		menu:SetPoint('BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, -53)
+		menu:SetPoint('BOTTOMRIGHT', UIParent, 'BOTTOMRIGHT', -166, 8)
 	end
 	-- Enlarge the holder so it's easy to drag in Edit Mode
 	local count = 0; for _,_ in ipairs(MICRO_BUTTONS) do count = count + 1 end
