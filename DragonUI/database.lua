@@ -109,7 +109,9 @@ local defaults = {
         bags = {
             scale = 0.9,
             x_position = 1,
-            y_position = 41
+            y_position = 41,
+            combine_bags = false,  -- Option to show all bags as one combined frame
+            anchor_to_bagbar = true  -- Always anchor bag frames above the bag bar
         },
 
         xprepbar = {

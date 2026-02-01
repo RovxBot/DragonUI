@@ -1538,3 +1538,412 @@ end
 ReanchorLFDStatus()
 hooksecurefunc("LFDSearchStatus_Update", ReanchorLFDStatus)
 
+-- ============================================================================
+-- CONTAINER FRAME POSITIONING SYSTEM
+-- Anchors bag frames above the bag bar and supports combined bag view
+-- ============================================================================
+
+-- Storage for combined bag frame
+local CombinedBagFrame = nil
+local originalContainerPositions = {}
+
+-- Get the anchor point based on bag bar position
+local function GetBagBarAnchorPoint()
+	if not _G.pUiBagsBar then
+		return "BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -20, 100
+	end
+	
+	local bagsBar = _G.pUiBagsBar
+	local scale = bagsBar:GetEffectiveScale()
+	local uiScale = UIParent:GetEffectiveScale()
+	
+	-- Get the bag bar's position in screen coordinates
+	local left = bagsBar:GetLeft() * scale / uiScale
+	local right = bagsBar:GetRight() * scale / uiScale
+	local top = bagsBar:GetTop() * scale / uiScale
+	
+	-- Return anchor point above the bag bar
+	return "BOTTOMRIGHT", UIParent, "BOTTOMLEFT", right, top + 10
+end
+
+-- Position container frames above the bag bar
+local function PositionContainerFrames()
+	if not addon.db or not addon.db.profile or not addon.db.profile.bags then
+		return
+	end
+	
+	local bagsConfig = addon.db.profile.bags
+	if not bagsConfig.anchor_to_bagbar then
+		return -- Use default Blizzard positioning
+	end
+	
+	if not _G.pUiBagsBar then
+		return
+	end
+	
+	local bagsBar = _G.pUiBagsBar
+	local scale = bagsBar:GetEffectiveScale()
+	local uiScale = UIParent:GetEffectiveScale()
+	
+	-- Calculate position above bag bar
+	local right = (bagsBar:GetRight() or 0) * scale / uiScale
+	local top = (bagsBar:GetTop() or 0) * scale / uiScale
+	
+	-- Track total height for stacking
+	local currentY = top + 10
+	local padding = 5
+	
+	-- Position each open container frame
+	for i = 1, NUM_CONTAINER_FRAMES or 13 do
+		local containerFrame = _G["ContainerFrame" .. i]
+		if containerFrame and containerFrame:IsShown() then
+			containerFrame:ClearAllPoints()
+			containerFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", right, currentY)
+			currentY = currentY + containerFrame:GetHeight() + padding
+		end
+	end
+end
+
+-- Create the combined bag frame
+local function CreateCombinedBagFrame()
+	if CombinedBagFrame then
+		return CombinedBagFrame
+	end
+	
+	local frame = CreateFrame("Frame", "DragonUICombinedBagFrame", UIParent)
+	frame:SetFrameStrata("HIGH")
+	frame:SetClampedToScreen(true)
+	frame:EnableMouse(true)
+	frame:SetMovable(true)
+	frame:Hide()
+	
+	-- Create background
+	local bg = frame:CreateTexture(nil, "BACKGROUND")
+	bg:SetAllPoints()
+	bg:SetTexture(0, 0, 0, 0.8)
+	frame.bg = bg
+	
+	-- Create border
+	local border = CreateFrame("Frame", nil, frame)
+	border:SetPoint("TOPLEFT", -4, 4)
+	border:SetPoint("BOTTOMRIGHT", 4, -4)
+	border:SetBackdrop({
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		edgeSize = 16,
+	})
+	border:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
+	frame.border = border
+	
+	-- Create title bar
+	local titleBar = CreateFrame("Frame", nil, frame)
+	titleBar:SetHeight(24)
+	titleBar:SetPoint("TOPLEFT", 0, 0)
+	titleBar:SetPoint("TOPRIGHT", 0, 0)
+	titleBar:EnableMouse(true)
+	titleBar:RegisterForDrag("LeftButton")
+	titleBar:SetScript("OnDragStart", function() frame:StartMoving() end)
+	titleBar:SetScript("OnDragStop", function() frame:StopMovingOrSizing() end)
+	frame.titleBar = titleBar
+	
+	-- Title text
+	local title = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	title:SetPoint("LEFT", 8, 0)
+	title:SetText("All Bags")
+	frame.title = title
+	
+	-- Close button
+	local closeBtn = CreateFrame("Button", nil, titleBar, "UIPanelCloseButton")
+	closeBtn:SetPoint("TOPRIGHT", 2, 2)
+	closeBtn:SetScript("OnClick", function() frame:Hide() end)
+	frame.closeBtn = closeBtn
+	
+	-- Gold display
+	local goldText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	goldText:SetPoint("BOTTOMLEFT", 8, 6)
+	frame.goldText = goldText
+	
+	-- Free slots display
+	local slotsText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	slotsText:SetPoint("BOTTOMRIGHT", -8, 6)
+	frame.slotsText = slotsText
+	
+	-- Container for item buttons
+	frame.itemButtons = {}
+	frame.columns = 10
+	frame.buttonSize = 37
+	frame.buttonPadding = 4
+	
+	CombinedBagFrame = frame
+	return frame
+end
+
+-- Update the combined bag frame contents
+local function UpdateCombinedBagFrame()
+	if not CombinedBagFrame or not CombinedBagFrame:IsShown() then
+		return
+	end
+	
+	local frame = CombinedBagFrame
+	local columns = frame.columns
+	local buttonSize = frame.buttonSize
+	local padding = frame.buttonPadding
+	
+	-- Clear existing buttons
+	for _, btn in pairs(frame.itemButtons) do
+		btn:Hide()
+	end
+	
+	-- Collect all bag slots
+	local allSlots = {}
+	local totalFree = 0
+	local totalSlots = 0
+	
+	-- Iterate through all bags (0 = backpack, 1-4 = additional bags)
+	for bag = 0, 4 do
+		local numSlots = GetContainerNumSlots(bag)
+		for slot = 1, numSlots do
+			totalSlots = totalSlots + 1
+			local texture, itemCount, locked, quality, readable = GetContainerItemInfo(bag, slot)
+			table.insert(allSlots, {
+				bag = bag,
+				slot = slot,
+				texture = texture,
+				count = itemCount,
+				locked = locked,
+				quality = quality
+			})
+			if not texture then
+				totalFree = totalFree + 1
+			end
+		end
+	end
+	
+	-- Calculate frame size
+	local rows = math.ceil(#allSlots / columns)
+	local width = (columns * (buttonSize + padding)) + padding + 16
+	local height = (rows * (buttonSize + padding)) + padding + 50 -- Extra for title and footer
+	
+	frame:SetSize(width, height)
+	
+	-- Position above bag bar
+	if addon.db.profile.bags.anchor_to_bagbar and _G.pUiBagsBar then
+		local bagsBar = _G.pUiBagsBar
+		local scale = bagsBar:GetEffectiveScale()
+		local uiScale = UIParent:GetEffectiveScale()
+		local right = (bagsBar:GetRight() or 0) * scale / uiScale
+		local top = (bagsBar:GetTop() or 0) * scale / uiScale
+		
+		frame:ClearAllPoints()
+		frame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", right, top + 10)
+	end
+	
+	-- Create/update item buttons
+	for i, slotData in ipairs(allSlots) do
+		local btn = frame.itemButtons[i]
+		if not btn then
+			btn = CreateFrame("Button", "DragonUICombinedBagButton" .. i, frame, "ContainerFrameItemButtonTemplate")
+			frame.itemButtons[i] = btn
+		end
+		
+		local col = ((i - 1) % columns)
+		local row = math.floor((i - 1) / columns)
+		local x = padding + 8 + (col * (buttonSize + padding))
+		local y = -30 - padding - (row * (buttonSize + padding))
+		
+		btn:ClearAllPoints()
+		btn:SetPoint("TOPLEFT", frame, "TOPLEFT", x, y)
+		btn:SetSize(buttonSize, buttonSize)
+		btn:SetID(slotData.slot)
+		btn.bagID = slotData.bag
+		
+		-- Set up click handling
+		btn:SetScript("OnClick", function(self, button)
+			if button == "LeftButton" then
+				if IsShiftKeyDown() then
+					-- Link item
+					local link = GetContainerItemLink(self.bagID, self:GetID())
+					if link then
+						ChatEdit_InsertLink(link)
+					end
+				else
+					-- Pick up or use item
+					PickupContainerItem(self.bagID, self:GetID())
+				end
+			elseif button == "RightButton" then
+				UseContainerItem(self.bagID, self:GetID())
+			end
+		end)
+		
+		-- Update button appearance
+		local icon = _G[btn:GetName() .. "IconTexture"]
+		local count = _G[btn:GetName() .. "Count"]
+		
+		if slotData.texture then
+			icon:SetTexture(slotData.texture)
+			icon:Show()
+			if slotData.count and slotData.count > 1 then
+				count:SetText(slotData.count)
+				count:Show()
+			else
+				count:Hide()
+			end
+		else
+			icon:Hide()
+			count:Hide()
+		end
+		
+		-- Quality border
+		if slotData.quality and slotData.quality > 1 then
+			local r, g, b = GetItemQualityColor(slotData.quality)
+			btn:SetBackdropBorderColor(r, g, b, 1)
+		else
+			btn:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+		end
+		
+		btn:Show()
+	end
+	
+	-- Update footer text
+	frame.goldText:SetText(GetCoinTextureString(GetMoney()))
+	frame.slotsText:SetText(totalFree .. "/" .. totalSlots .. " Free")
+end
+
+-- Toggle combined bag frame
+function addon.ToggleCombinedBags()
+	local frame = CreateCombinedBagFrame()
+	
+	if frame:IsShown() then
+		frame:Hide()
+		-- Show individual bags if needed
+		if not addon.db.profile.bags.combine_bags then
+			ToggleAllBags()
+		end
+	else
+		-- Hide individual container frames
+		for i = 1, NUM_CONTAINER_FRAMES or 13 do
+			local containerFrame = _G["ContainerFrame" .. i]
+			if containerFrame then
+				containerFrame:Hide()
+			end
+		end
+		
+		frame:Show()
+		UpdateCombinedBagFrame()
+	end
+end
+
+-- Hook into bag opening to redirect to combined view or reposition
+local function OnBagOpen(bagID)
+	if not addon.db or not addon.db.profile or not addon.db.profile.bags then
+		return
+	end
+	
+	local bagsConfig = addon.db.profile.bags
+	
+	if bagsConfig.combine_bags then
+		-- Close individual bag and show combined
+		for i = 1, NUM_CONTAINER_FRAMES or 13 do
+			local containerFrame = _G["ContainerFrame" .. i]
+			if containerFrame and containerFrame:IsShown() then
+				containerFrame:Hide()
+			end
+		end
+		
+		local frame = CreateCombinedBagFrame()
+		frame:Show()
+		UpdateCombinedBagFrame()
+	elseif bagsConfig.anchor_to_bagbar then
+		-- Reposition after a short delay to let Blizzard finish
+		addon:ScheduleTimer(PositionContainerFrames, 0.05)
+	end
+end
+
+-- Hook into bag updates
+local function OnBagUpdate()
+	if CombinedBagFrame and CombinedBagFrame:IsShown() then
+		UpdateCombinedBagFrame()
+	end
+	
+	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
+		PositionContainerFrames()
+	end
+end
+
+-- Override the default bag toggle function
+local originalToggleBag = ToggleBag
+function ToggleBag(bagID)
+	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.combine_bags then
+		addon.ToggleCombinedBags()
+	else
+		originalToggleBag(bagID)
+		if addon.db.profile.bags.anchor_to_bagbar then
+			addon:ScheduleTimer(PositionContainerFrames, 0.05)
+		end
+	end
+end
+
+-- Override ToggleAllBags
+local originalToggleAllBags = ToggleAllBags
+function ToggleAllBags()
+	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.combine_bags then
+		addon.ToggleCombinedBags()
+	else
+		originalToggleAllBags()
+		if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
+			addon:ScheduleTimer(PositionContainerFrames, 0.05)
+		end
+	end
+end
+
+-- Override OpenAllBags
+local originalOpenAllBags = OpenAllBags
+function OpenAllBags()
+	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.combine_bags then
+		local frame = CreateCombinedBagFrame()
+		frame:Show()
+		UpdateCombinedBagFrame()
+	else
+		originalOpenAllBags()
+		if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
+			addon:ScheduleTimer(PositionContainerFrames, 0.05)
+		end
+	end
+end
+
+-- Override CloseAllBags
+local originalCloseAllBags = CloseAllBags
+function CloseAllBags()
+	if CombinedBagFrame then
+		CombinedBagFrame:Hide()
+	end
+	originalCloseAllBags()
+end
+
+-- Hook container frame show events for repositioning
+for i = 1, NUM_CONTAINER_FRAMES or 13 do
+	local containerFrame = _G["ContainerFrame" .. i]
+	if containerFrame then
+		containerFrame:HookScript("OnShow", function()
+			if addon.db and addon.db.profile and addon.db.profile.bags then
+				if addon.db.profile.bags.combine_bags then
+					containerFrame:Hide()
+					local frame = CreateCombinedBagFrame()
+					frame:Show()
+					UpdateCombinedBagFrame()
+				elseif addon.db.profile.bags.anchor_to_bagbar then
+					addon:ScheduleTimer(PositionContainerFrames, 0.05)
+				end
+			end
+		end)
+	end
+end
+
+-- Register for bag update events
+addon.package:RegisterEvents(function(self, event, ...)
+	OnBagUpdate()
+end, 'BAG_UPDATE', 'PLAYER_MONEY', 'ITEM_LOCK_CHANGED')
+
+-- Export functions for options panel
+addon.PositionContainerFrames = PositionContainerFrames
+addon.UpdateCombinedBagFrame = UpdateCombinedBagFrame
+
