@@ -1939,24 +1939,30 @@ local function RepositionAllContainers()
 	local SPACING_X = 5
 	local SPACING_Y = 10
 	
-	local visibleIndex = 0
+	-- First pass: collect all visible bags and their sizes
+	local visibleBags = {}
 	for i = 1, NUM_CONTAINER_FRAMES or 13 do
 		local containerFrame = _G["ContainerFrame" .. i]
 		if containerFrame and containerFrame:IsShown() then
-			local CONTAINER_WIDTH = containerFrame:GetWidth() or 192
-			local CONTAINER_HEIGHT = containerFrame:GetHeight() or 70
-			
-			local col = visibleIndex % 2
-			local row = math.floor(visibleIndex / 2)
-			
-			local x = right - (col * (CONTAINER_WIDTH + SPACING_X)) - CONTAINER_WIDTH
-			local y = top + 10 + (row * (CONTAINER_HEIGHT + SPACING_Y))
-			
-			containerFrame:ClearAllPoints()
-			containerFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
-			
-			visibleIndex = visibleIndex + 1
+			table.insert(visibleBags, {
+				frame = containerFrame,
+				width = containerFrame:GetWidth() or 192,
+				height = containerFrame:GetHeight() or 200
+			})
 		end
+	end
+	
+	-- Position bags in a single column, stacking upward from bag bar
+	local yOffset = 10  -- Initial gap above bag bar
+	for i, bagInfo in ipairs(visibleBags) do
+		local x = right - bagInfo.width
+		local y = top + yOffset
+		
+		bagInfo.frame:ClearAllPoints()
+		bagInfo.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+		
+		-- Move up for next bag
+		yOffset = yOffset + bagInfo.height + SPACING_Y
 	end
 end
 
