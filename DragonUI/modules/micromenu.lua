@@ -1547,6 +1547,19 @@ hooksecurefunc("LFDSearchStatus_Update", ReanchorLFDStatus)
 local CombinedBagFrame = nil
 local originalContainerPositions = {}
 
+-- Simple delayed call helper for 3.3.5a (no C_Timer)
+local function DelayedCall(delay, func)
+	local frame = CreateFrame("Frame")
+	local elapsed = 0
+	frame:SetScript("OnUpdate", function(self, dt)
+		elapsed = elapsed + dt
+		if elapsed >= delay then
+			self:SetScript("OnUpdate", nil)
+			func()
+		end
+	end)
+end
+
 -- Get the anchor point based on bag bar position
 local function GetBagBarAnchorPoint()
 	if not _G.pUiBagsBar then
@@ -1854,7 +1867,7 @@ local function OnBagOpen(bagID)
 		UpdateCombinedBagFrame()
 	elseif bagsConfig.anchor_to_bagbar then
 		-- Reposition after a short delay to let Blizzard finish
-		addon:ScheduleTimer(PositionContainerFrames, 0.05)
+		DelayedCall(0.05, PositionContainerFrames)
 	end
 end
 
@@ -1877,7 +1890,7 @@ function ToggleBag(bagID)
 	else
 		originalToggleBag(bagID)
 		if addon.db.profile.bags.anchor_to_bagbar then
-			addon:ScheduleTimer(PositionContainerFrames, 0.05)
+			DelayedCall(0.05, PositionContainerFrames)
 		end
 	end
 end
@@ -1890,7 +1903,7 @@ function ToggleAllBags()
 	else
 		originalToggleAllBags()
 		if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
-			addon:ScheduleTimer(PositionContainerFrames, 0.05)
+			DelayedCall(0.05, PositionContainerFrames)
 		end
 	end
 end
@@ -1905,7 +1918,7 @@ function OpenAllBags()
 	else
 		originalOpenAllBags()
 		if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
-			addon:ScheduleTimer(PositionContainerFrames, 0.05)
+			DelayedCall(0.05, PositionContainerFrames)
 		end
 	end
 end
@@ -1931,7 +1944,7 @@ for i = 1, NUM_CONTAINER_FRAMES or 13 do
 					frame:Show()
 					UpdateCombinedBagFrame()
 				elseif addon.db.profile.bags.anchor_to_bagbar then
-					addon:ScheduleTimer(PositionContainerFrames, 0.05)
+					DelayedCall(0.05, PositionContainerFrames)
 				end
 			end
 		end)
