@@ -2,6 +2,12 @@ local addon = select(2, ...)
 local unitframe = {}
 addon.unitframe = unitframe
 
+-- Helper to check if a frame has a saved mover position
+local function hasMoverPosition(key)
+    local movers = addon.db and addon.db.profile and addon.db.profile.movers
+    return movers and movers[key] ~= nil
+end
+
 --[[
 * DragonUI Unit Frame Module
 *
@@ -831,42 +837,46 @@ function unitframe:ApplySettings()
     do
         local playerConfig = addon:GetConfigValue("unitframe", "player") or {}
 
-        if not localSettings.player then
-            localSettings.player = {}
+        -- Skip positioning if mover system has a saved position
+        if not hasMoverPosition('player') then
+            if not localSettings.player then
+                localSettings.player = {}
+            end
+            local objLocal = localSettings.player
+
+            -- Use database values if override is active, otherwise use local (default) settings
+            local anchor = playerConfig.override and playerConfig.anchor or objLocal.anchor
+            local anchorParent = playerConfig.override and playerConfig.anchorParent or objLocal.anchorParent
+            local anchorPoint = playerConfig.override and playerConfig.anchorPoint or objLocal.anchorParent
+            local x = playerConfig.override and playerConfig.x or objLocal.x
+            local y = playerConfig.override and playerConfig.y or objLocal.y
+
+            if playerConfig.override then
+                PlayerFrame:SetUserPlaced(true)
+            end
+
+            unitframe.MovePlayerFrame(anchor, anchorParent, anchorPoint, x, y)
         end
-        local objLocal = localSettings.player
-
-        -- Use database values if override is active, otherwise use local (default) settings
-        local anchor = playerConfig.override and playerConfig.anchor or objLocal.anchor
-        local anchorParent = playerConfig.override and playerConfig.anchorParent or objLocal.anchorParent
-        local anchorPoint = playerConfig.override and playerConfig.anchorPoint or objLocal.anchorParent -- ✅ Get the correct anchor point
-        local x = playerConfig.override and playerConfig.x or objLocal.x
-        local y = playerConfig.override and playerConfig.y or objLocal.y
-
-        if playerConfig.override then
-            PlayerFrame:SetUserPlaced(true)
-        end
-
-        -- ✅ Call MovePlayerFrame with the correct arguments
-        unitframe.MovePlayerFrame(anchor, anchorParent, anchorPoint, x, y)
+        -- Always apply scale
         PlayerFrame:SetScale(playerConfig.scale or 1)
     end
 
     -- target
     do
-        -- ✅ CORRECCIÓN: Cargar la configuración del target desde la base de datos.
         local targetConfig = addon:GetConfigValue("unitframe", "target") or {}
 
-        if not localSettings.target then
-            localSettings.target = {}
-        end
-        local objLocal = localSettings.target
-        -- Set defaults if missing
-        if not objLocal.anchor then
-            objLocal.anchor = addon.defaults.profile.unitframe.target.anchor
-        end
-        if not objLocal.anchorParent then
-            objLocal.anchorParent = addon.defaults.profile.unitframe.target.anchorParent
+        -- Skip positioning if mover system has a saved position
+        if not hasMoverPosition('target') then
+            if not localSettings.target then
+                localSettings.target = {}
+            end
+            local objLocal = localSettings.target
+            -- Set defaults if missing
+            if not objLocal.anchor then
+                objLocal.anchor = addon.defaults.profile.unitframe.target.anchor
+            end
+            if not objLocal.anchorParent then
+                objLocal.anchorParent = addon.defaults.profile.unitframe.target.anchorParent
         end
         if not objLocal.x then
             objLocal.x = addon.defaults.profile.unitframe.target.x
@@ -875,17 +885,20 @@ function unitframe:ApplySettings()
             objLocal.y = addon.defaults.profile.unitframe.target.y
         end
 
-        if targetConfig.override then
-            TargetFrame:SetMovable(1)
-            TargetFrame:StartMoving()
-            unitframe.MoveTargetFrame(targetConfig.anchor, targetConfig.anchorParent, targetConfig.x, targetConfig.y)
-            -- TargetFrame:SetUserPlaced(true)
-            TargetFrame:StopMovingOrSizing()
-            TargetFrame:SetMovable()
-        else
-            unitframe.MoveTargetFrame(objLocal.anchor, objLocal.anchorParent, objLocal.x, objLocal.y)
+        -- Skip positioning if mover system has a saved position
+        if not hasMoverPosition('target') then
+            if targetConfig.override then
+                TargetFrame:SetMovable(1)
+                TargetFrame:StartMoving()
+                unitframe.MoveTargetFrame(targetConfig.anchor, targetConfig.anchorParent, targetConfig.x, targetConfig.y)
+                -- TargetFrame:SetUserPlaced(true)
+                TargetFrame:StopMovingOrSizing()
+                TargetFrame:SetMovable()
+            else
+                unitframe.MoveTargetFrame(objLocal.anchor, objLocal.anchorParent, objLocal.x, objLocal.y)
+            end
         end
-        -- Support for Combo Points scaling
+        -- Always apply scale (Support for Combo Points scaling)
         TargetFrame:SetScale(targetConfig.scale)
         if ComboFrame and TargetFrame then
             ComboFrame:SetScale(TargetFrame:GetScale() or 1)
@@ -899,26 +912,30 @@ function unitframe:ApplySettings()
             -- ✅ CORRECCIÓN: Usar la misma lógica de carga que Player/Target.
             local focusConfig = addon:GetConfigValue("unitframe", "focus") or {}
 
-            if not localSettings.focus then
-                localSettings.focus = {}
-            end
-            local objLocal = localSettings.focus
+            -- Skip positioning if mover system has a saved position
+            if not hasMoverPosition('focus') then
+                if not localSettings.focus then
+                    localSettings.focus = {}
+                end
+                local objLocal = localSettings.focus
 
-            -- Usar valores de la base de datos si override está activo, si no, los locales.
-            local anchor = focusConfig.override and focusConfig.anchor or objLocal.anchor
-            local anchorParent = focusConfig.override and focusConfig.anchorParent or objLocal.anchorParent
-            local anchorPoint = focusConfig.override and focusConfig.anchorPoint or objLocal.anchorParent
-            local x = focusConfig.override and focusConfig.x or objLocal.x
-            local y = focusConfig.override and focusConfig.y or objLocal.y
+                -- Usar valores de la base de datos si override está activo, si no, los locales.
+                local anchor = focusConfig.override and focusConfig.anchor or objLocal.anchor
+                local anchorParent = focusConfig.override and focusConfig.anchorParent or objLocal.anchorParent
+                local anchorPoint = focusConfig.override and focusConfig.anchorPoint or objLocal.anchorParent
+                local x = focusConfig.override and focusConfig.x or objLocal.x
+                local y = focusConfig.override and focusConfig.y or objLocal.y
+
+                if focusConfig.override then
+                    FocusFrame:SetMovable(true) -- Hacerlo movible primero
+                    FocusFrame:SetUserPlaced(true)
+                end
+
+                -- ✅ Llamar a MoveFocusFrame con los 5 argumentos correctos.
+                unitframe.MoveFocusFrame(anchor, anchorParent, anchorPoint, x, y)
+            end
+            -- Always apply scale
             local scale = focusConfig.scale or 1.0
-
-            if focusConfig.override then
-                FocusFrame:SetMovable(true) -- Hacerlo movible primero
-                FocusFrame:SetUserPlaced(true)
-            end
-
-            -- ✅ Llamar a MoveFocusFrame con los 5 argumentos correctos.
-            unitframe.MoveFocusFrame(anchor, anchorParent, anchorPoint, x, y)
             FocusFrame:SetScale(scale)
         end
     end
@@ -3821,17 +3838,23 @@ function unitframe.ChangeToT()
     -- Get configuration settings
     local config = addon.db and addon.db.profile and addon.db.profile.unitframe and addon.db.profile.unitframe.tot or {}
     local scale = config.scale or 1.0
-    local anchorFrame = config.anchorFrame or 'TargetFrame'
-    local anchor = config.anchor or 'BOTTOMRIGHT'
-    local anchorParent = config.anchorParent or 'BOTTOMRIGHT'
-    local x = config.x or (-35 + 27)
-    local y = config.y or -15
 
-    -- Position and scale the ToT frame (like ultimaversion)
-    TargetFrameToT:ClearAllPoints()
-    TargetFrameToT:SetPoint(anchor, _G[anchorFrame] or TargetFrame, anchorParent, x, y)
+    -- Always apply scale
     TargetFrameToT:SetScale(scale)
     TargetFrameToT:SetSize(93 + 27, 45)
+
+    -- Skip positioning if mover system has a saved position
+    if not hasMoverPosition('tot') then
+        local anchorFrame = config.anchorFrame or 'TargetFrame'
+        local anchor = config.anchor or 'BOTTOMRIGHT'
+        local anchorParent = config.anchorParent or 'BOTTOMRIGHT'
+        local x = config.x or (-35 + 27)
+        local y = config.y or -15
+
+        -- Position the ToT frame (like ultimaversion)
+        TargetFrameToT:ClearAllPoints()
+        TargetFrameToT:SetPoint(anchor, _G[anchorFrame] or TargetFrame, anchorParent, x, y)
+    end
 
     -- Hide default texture frame (simplified)
     if TargetFrameToTTextureFrameTexture then
@@ -4991,17 +5014,23 @@ function unitframe.ChangeFocusToT()
     -- Get configuration settings
     local config = addon.db and addon.db.profile and addon.db.profile.unitframe and addon.db.profile.unitframe.fot or {}
     local scale = config.scale or 1.0
-    local anchorFrame = config.anchorFrame or 'FocusFrame'
-    local anchor = config.anchor or 'BOTTOMRIGHT'
-    local anchorParent = config.anchorParent or 'BOTTOMRIGHT'
-    local x = config.x or (-35 + 27)
-    local y = config.y or -15
 
-    -- Position and scale the FoT frame (like ultimaversion)
-    FocusFrameToT:ClearAllPoints()
-    FocusFrameToT:SetPoint(anchor, _G[anchorFrame] or FocusFrame, anchorParent, x, y)
+    -- Always apply scale and size
     FocusFrameToT:SetScale(scale)
     FocusFrameToT:SetSize(93 + 27, 45)
+
+    -- Skip positioning if mover system has a saved position
+    if not hasMoverPosition('fot') then
+        local anchorFrame = config.anchorFrame or 'FocusFrame'
+        local anchor = config.anchor or 'BOTTOMRIGHT'
+        local anchorParent = config.anchorParent or 'BOTTOMRIGHT'
+        local x = config.x or (-35 + 27)
+        local y = config.y or -15
+
+        -- Position the FoT frame (like ultimaversion)
+        FocusFrameToT:ClearAllPoints()
+        FocusFrameToT:SetPoint(anchor, _G[anchorFrame] or FocusFrame, anchorParent, x, y)
+    end
 
     -- Hide default texture frame (simplified)
     if FocusFrameToTTextureFrameTexture then
@@ -6256,32 +6285,37 @@ function unitframe:UpdatePartyState(state)
     -- ✅ CORRECCIÓN: Lógica de carga robusta que respeta el 'override'.
     local partyConfig = addon:GetConfigValue("unitframe", "party") or {}
 
-    -- Determinar los valores a usar basados en el override.
-    local anchor, parent, anchorPoint, x, y
-    if partyConfig.override then
-        anchor = partyConfig.anchor or "BOTTOMLEFT"
-        -- Usamos _G para obtener el frame por su nombre, con fallback a UIParent
-        parent = _G[partyConfig.anchorParent or "UIParent"] or UIParent
-        anchorPoint = partyConfig.anchorPoint or "BOTTOMLEFT"
-        x = partyConfig.x or 0
-        y = partyConfig.y or 0
-    else
-        -- Valores por defecto si no hay override (posición inicial)
-        anchor = "TOPLEFT"
-        parent = UIParent
-        anchorPoint = "TOPLEFT"
-        x = 20
-        y = -120
+    -- Skip positioning if mover system has a saved position
+    if not hasMoverPosition('party') then
+        -- Determinar los valores a usar basados en el override.
+        local anchor, parent, anchorPoint, x, y
+        if partyConfig.override then
+            anchor = partyConfig.anchor or "BOTTOMLEFT"
+            -- Usamos _G para obtener el frame por su nombre, con fallback a UIParent
+            parent = _G[partyConfig.anchorParent or "UIParent"] or UIParent
+            anchorPoint = partyConfig.anchorPoint or "BOTTOMLEFT"
+            x = partyConfig.x or 0
+            y = partyConfig.y or 0
+        else
+            -- Valores por defecto si no hay override (posición inicial)
+            anchor = "TOPLEFT"
+            parent = UIParent
+            anchorPoint = "TOPLEFT"
+            x = 20
+            y = -120
+        end
+
+        -- Aplicar la posición.
+        unitframe.PartyMoveFrame:ClearAllPoints()
+        unitframe.PartyMoveFrame:SetPoint(anchor, parent, anchorPoint, x, y)
     end
 
-    -- Valores que no dependen del override (escala, padding, etc.)
+    -- Valores que no dependen del override (escala, padding, etc.) - always apply
     local scale = partyConfig.scale or 1.0
     local padding = partyConfig.padding or 10
     local orientation = partyConfig.orientation or 'vertical'
 
-    -- Aplicar la posición y escala.
-    unitframe.PartyMoveFrame:ClearAllPoints()
-    unitframe.PartyMoveFrame:SetPoint(anchor, parent, anchorPoint, x, y)
+    -- Always apply scale
     unitframe.PartyMoveFrame:SetScale(scale)
 
     -- El resto de la lógica para la orientación y el tamaño se mantiene.
@@ -6859,28 +6893,31 @@ function unitframe.ChangePetFrame()
     local scale = petConfig.scale or 1.0
     PetFrame:SetScale(scale)
 
-    -- Apply positioning
-    if petConfig.override then
-        -- FIXED: Make PetFrame movable before setting user placement
-        PetFrame:SetMovable(true)
-        PetFrame:ClearAllPoints()
+    -- Skip positioning if mover system has a saved position
+    if not hasMoverPosition('pet') then
+        -- Apply positioning
+        if petConfig.override then
+            -- FIXED: Make PetFrame movable before setting user placement
+            PetFrame:SetMovable(true)
+            PetFrame:ClearAllPoints()
 
-        -- FIXED: Use consistent default coordinates that match the non-override position
-        -- When not using override, position is 'TOPLEFT', PlayerFrame, 'TOPLEFT', 100, -70
-        -- Convert this to UIParent coordinates for override mode
-        local defaultX = petConfig.x or 200 -- Aproximadamente PlayerFrame.x + 100
-        local defaultY = petConfig.y or -150 -- Aproximadamente PlayerFrame.y - 70
-        local anchor = petConfig.anchor or 'TOPLEFT'
-        local anchorParent = petConfig.anchorParent or 'TOPLEFT'
+            -- FIXED: Use consistent default coordinates that match the non-override position
+            -- When not using override, position is 'TOPLEFT', PlayerFrame, 'TOPLEFT', 100, -70
+            -- Convert this to UIParent coordinates for override mode
+            local defaultX = petConfig.x or 200 -- Aproximadamente PlayerFrame.x + 100
+            local defaultY = petConfig.y or -150 -- Aproximadamente PlayerFrame.y - 70
+            local anchor = petConfig.anchor or 'TOPLEFT'
+            local anchorParent = petConfig.anchorParent or 'TOPLEFT'
 
-        PetFrame:SetPoint(anchor, UIParent, anchorParent, defaultX, defaultY)
-        PetFrame:SetUserPlaced(true)
-        -- FIXED: Set movable back to false to prevent accidental dragging
-        PetFrame:SetMovable(false)
-    else
-        -- Default positioning relative to PlayerFrame (unchanged)
-        PetFrame:ClearAllPoints()
-        PetFrame:SetPoint('TOPLEFT', PlayerFrame, 'TOPLEFT', 100, -70)
+            PetFrame:SetPoint(anchor, UIParent, anchorParent, defaultX, defaultY)
+            PetFrame:SetUserPlaced(true)
+            -- FIXED: Set movable back to false to prevent accidental dragging
+            PetFrame:SetMovable(false)
+        else
+            -- Default positioning relative to PlayerFrame (unchanged)
+            PetFrame:ClearAllPoints()
+            PetFrame:SetPoint('TOPLEFT', PlayerFrame, 'TOPLEFT', 100, -70)
+        end
     end
 
     PetFrameTexture:SetTexture('')
@@ -7890,21 +7927,24 @@ textUpdateFrame:SetScript("OnEvent", function(self, event, unit)
                 local scale = petConfig.scale or 1.0
                 PetFrame:SetScale(scale)
 
-                -- Apply positioning if override is enabled
-                if petConfig.override then
-                    PetFrame:SetMovable(true)
-                    PetFrame:ClearAllPoints()
-                    local defaultX = petConfig.x or 200
-                    local defaultY = petConfig.y or -150
-                    local anchor = petConfig.anchor or 'TOPLEFT'
-                    local anchorParent = petConfig.anchorParent or 'TOPLEFT'
-                    PetFrame:SetPoint(anchor, UIParent, anchorParent, defaultX, defaultY)
-                    PetFrame:SetUserPlaced(true)
-                    PetFrame:SetMovable(false)
-                else
-                    -- Reset to default position relative to PlayerFrame
-                    PetFrame:ClearAllPoints()
-                    PetFrame:SetPoint('TOPLEFT', PlayerFrame, 'TOPLEFT', 100, -70)
+                -- Skip positioning if mover system has a saved position
+                if not hasMoverPosition('pet') then
+                    -- Apply positioning if override is enabled
+                    if petConfig.override then
+                        PetFrame:SetMovable(true)
+                        PetFrame:ClearAllPoints()
+                        local defaultX = petConfig.x or 200
+                        local defaultY = petConfig.y or -150
+                        local anchor = petConfig.anchor or 'TOPLEFT'
+                        local anchorParent = petConfig.anchorParent or 'TOPLEFT'
+                        PetFrame:SetPoint(anchor, UIParent, anchorParent, defaultX, defaultY)
+                        PetFrame:SetUserPlaced(true)
+                        PetFrame:SetMovable(false)
+                    else
+                        -- Reset to default position relative to PlayerFrame
+                        PetFrame:ClearAllPoints()
+                        PetFrame:SetPoint('TOPLEFT', PlayerFrame, 'TOPLEFT', 100, -70)
+                    end
                 end
 
                 -- FIXED: Llamar a ChangePetFrame para aplicar toda la configuración
