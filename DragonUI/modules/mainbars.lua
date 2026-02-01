@@ -344,6 +344,12 @@ function addon.PositionActionBars()
         -- Apply scaling
         pUiMainBar:SetScale(db.scale_actionbar or 0.9)
 
+        -- Apply layout to main bar buttons
+        if db.player then
+            addon.ArrangeActionBarButtons('ActionButton', pUiMainBar, pUiMainBar,
+                db.player.rows or 1, db.player.columns or 12, db.player.buttons_shown or 12)
+        end
+
         if db.player.override then
             -- MODO MANUAL: Posición guardada por el usuario.
             -- ✅ CORRECCIÓN: Dividimos por la escala para convertir píxeles a puntos.
@@ -1206,8 +1212,25 @@ function MainMenuBarMixin:initialize()
 end
 addon.pUiMainBar = pUiMainBar;
 
+-- Debounced refresh timer handle
+local refreshMainbarsTimer = nil
+
+-- Debounced version of RefreshMainbars for use with sliders to prevent rapid updates
+function addon.RefreshMainbarsDebounced()
+    if refreshMainbarsTimer then
+        addon.core:CancelTimer(refreshMainbarsTimer, true)
+    end
+    refreshMainbarsTimer = addon.core:ScheduleTimer(function()
+        refreshMainbarsTimer = nil
+        if addon.RefreshMainbars then
+            addon.RefreshMainbars()
+        end
+    end, 0.1)
+end
+
 -- configuration refresh function
 function addon.RefreshMainbars()
+    if InCombatLockdown() then return end
     if not pUiMainBar then return end
 
     local db = addon.db and addon.db.profile
@@ -1218,35 +1241,11 @@ function addon.RefreshMainbars()
     local db_buttons = db.buttons
 
     -- ========================================
-    -- ✅ POSICIONAR BARRAS (NUEVO Y SIMPLIFICADO)
+    -- ✅ POSICIONAR BARRAS (HANDLES ALL POSITIONING AND LAYOUTS)
     -- ========================================
+    -- Note: PositionActionBars already calls ArrangeActionBarButtons for each bar,
+    -- so we don't need to call it again here. This prevents double-processing.
     addon.PositionActionBars()
-
-    -- ========================================
-    -- ✅ APLICAR NUEVOS LAYOUTS DE BOTONES
-    -- ========================================
-    if db_mainbars and db_mainbars.player then
-        -- Apply main bar layout
-        addon.ArrangeActionBarButtons('ActionButton', pUiMainBar, pUiMainBar,
-            db_mainbars.player.rows or 1,
-            db_mainbars.player.columns or 12,
-            db_mainbars.player.buttons_shown or 12)
-    end
-
-    -- Apply bottom bar layouts
-    if db_mainbars and db_mainbars.bottom_left then
-        addon.ArrangeActionBarButtons('MultiBarBottomLeftButton', MultiBarBottomLeft, MultiBarBottomLeft,
-            db_mainbars.bottom_left.rows or 1,
-            db_mainbars.bottom_left.columns or 12,
-            db_mainbars.bottom_left.buttons_shown or 12)
-    end
-
-    if db_mainbars and db_mainbars.bottom_right then
-        addon.ArrangeActionBarButtons('MultiBarBottomRightButton', MultiBarBottomRight, MultiBarBottomRight,
-            db_mainbars.bottom_right.rows or 1,
-            db_mainbars.bottom_right.columns or 12,
-            db_mainbars.bottom_right.buttons_shown or 12)
-    end
 
     -- ========================================
     -- ✅ REFRESH ACTION BAR VISIBILITY
@@ -1282,7 +1281,7 @@ function addon.RefreshMainbars()
 
     -- Update backgrounds
     MainMenuBarMixin:update_main_bar_background()
-    addon.RefreshUpperActionBarsPosition()
+    -- Note: RefreshUpperActionBarsPosition is already called above in the refresh flow
 
     -- Update grids and gryphons
     if addon.actionbuttons_grid then
