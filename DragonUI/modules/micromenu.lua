@@ -1612,44 +1612,26 @@ function UpdateContainerFrameAnchors()
 	local right = (bagsBar:GetRight() or 0) * scale / uiScale
 	local top = (bagsBar:GetTop() or 0) * scale / uiScale
 	
-	-- Constants for layout
-	local CONTAINER_WIDTH = 192  -- Standard bag width
-	local CONTAINER_SPACING = 0
-	local VISIBLE_CONTAINER_SPACING = 3
-	local CONTAINER_OFFSET_Y = 70  -- Vertical offset per row
+	local SPACING_X = 5
+	local SPACING_Y = 10
 	
-	-- Screen bounds
-	local screenHeight = UIParent:GetTop() or 768
-	
-	-- Track current position
-	local xOffset = 0
-	local yOffset = 0
-	local columnsThisRow = 0
-	local maxColumnsPerRow = 2  -- Stack 2 bags horizontally before going up
-	
-	-- Position each container frame
+	local visibleIndex = 0
 	for i = 1, NUM_CONTAINER_FRAMES or 13 do
 		local containerFrame = _G["ContainerFrame" .. i]
 		if containerFrame and containerFrame:IsShown() then
-			-- Calculate position
+			local CONTAINER_WIDTH = containerFrame:GetWidth() or 192
+			local CONTAINER_HEIGHT = containerFrame:GetHeight() or 70
+			
+			local col = visibleIndex % 2
+			local row = math.floor(visibleIndex / 2)
+			
+			local x = right - (col * (CONTAINER_WIDTH + SPACING_X)) - CONTAINER_WIDTH
+			local y = top + 10 + (row * (CONTAINER_HEIGHT + SPACING_Y))
+			
 			containerFrame:ClearAllPoints()
-			
-			-- Position from bottom-right of bag bar, going left then up
-			local x = right - xOffset - containerFrame:GetWidth()
-			local y = top + 10 + yOffset
-			
 			containerFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
 			
-			-- Move to next column
-			xOffset = xOffset + containerFrame:GetWidth() + VISIBLE_CONTAINER_SPACING
-			columnsThisRow = columnsThisRow + 1
-			
-			-- Start new row if needed
-			if columnsThisRow >= maxColumnsPerRow then
-				xOffset = 0
-				yOffset = yOffset + CONTAINER_OFFSET_Y + containerFrame:GetHeight()
-				columnsThisRow = 0
-			end
+			visibleIndex = visibleIndex + 1
 		end
 	end
 end
@@ -1935,7 +1917,93 @@ function CloseAllBags()
 	originalCloseAllBags()
 end
 
--- Hook container frame show events for combined bag mode only
+-- Function to position a single container frame above bag bar
+local function PositionSingleContainer(containerFrame)
+	if not containerFrame or not containerFrame:IsShown() then return end
+	if not addon.db or not addon.db.profile or not addon.db.profile.bags then return end
+	if not addon.db.profile.bags.anchor_to_bagbar then return end
+	if not _G.pUiBagsBar then return end
+	
+	-- Count visible bags and this bag's index
+	local visibleIndex = 0
+	local frameName = containerFrame:GetName()
+	local frameNum = frameName and tonumber(frameName:match("ContainerFrame(%d+)"))
+	
+	for i = 1, NUM_CONTAINER_FRAMES or 13 do
+		local cf = _G["ContainerFrame" .. i]
+		if cf and cf:IsShown() then
+			visibleIndex = visibleIndex + 1
+			if i == frameNum then
+				break
+			end
+		end
+	end
+	
+	-- Get bag bar position
+	local bagsBar = _G.pUiBagsBar
+	local scale = bagsBar:GetEffectiveScale()
+	local uiScale = UIParent:GetEffectiveScale()
+	
+	local right = (bagsBar:GetRight() or 0) * scale / uiScale
+	local top = (bagsBar:GetTop() or 0) * scale / uiScale
+	
+	-- Calculate position based on visible index (0-based for math)
+	local index = visibleIndex - 1
+	local col = index % 2  -- 0 or 1 (2 columns)
+	local row = math.floor(index / 2)
+	
+	local CONTAINER_WIDTH = containerFrame:GetWidth() or 192
+	local CONTAINER_HEIGHT = containerFrame:GetHeight() or 70
+	local SPACING_X = 5
+	local SPACING_Y = 10
+	
+	-- Position from top-right of bag bar, going left then up
+	local x = right - (col * (CONTAINER_WIDTH + SPACING_X)) - CONTAINER_WIDTH
+	local y = top + 10 + (row * (CONTAINER_HEIGHT + SPACING_Y))
+	
+	containerFrame:ClearAllPoints()
+	containerFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+end
+
+-- Reposition all visible container frames
+local function RepositionAllContainers()
+	if not addon.db or not addon.db.profile or not addon.db.profile.bags then return end
+	if not addon.db.profile.bags.anchor_to_bagbar then return end
+	if not _G.pUiBagsBar then return end
+	
+	-- Get bag bar position
+	local bagsBar = _G.pUiBagsBar
+	local scale = bagsBar:GetEffectiveScale()
+	local uiScale = UIParent:GetEffectiveScale()
+	
+	local right = (bagsBar:GetRight() or 0) * scale / uiScale
+	local top = (bagsBar:GetTop() or 0) * scale / uiScale
+	
+	local SPACING_X = 5
+	local SPACING_Y = 10
+	
+	local visibleIndex = 0
+	for i = 1, NUM_CONTAINER_FRAMES or 13 do
+		local containerFrame = _G["ContainerFrame" .. i]
+		if containerFrame and containerFrame:IsShown() then
+			local CONTAINER_WIDTH = containerFrame:GetWidth() or 192
+			local CONTAINER_HEIGHT = containerFrame:GetHeight() or 70
+			
+			local col = visibleIndex % 2
+			local row = math.floor(visibleIndex / 2)
+			
+			local x = right - (col * (CONTAINER_WIDTH + SPACING_X)) - CONTAINER_WIDTH
+			local y = top + 10 + (row * (CONTAINER_HEIGHT + SPACING_Y))
+			
+			containerFrame:ClearAllPoints()
+			containerFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+			
+			visibleIndex = visibleIndex + 1
+		end
+	end
+end
+
+-- Hook container frame show events
 for i = 1, NUM_CONTAINER_FRAMES or 13 do
 	local containerFrame = _G["ContainerFrame" .. i]
 	if containerFrame then
@@ -1946,8 +2014,10 @@ for i = 1, NUM_CONTAINER_FRAMES or 13 do
 					local frame = CreateCombinedBagFrame()
 					frame:Show()
 					UpdateCombinedBagFrame()
+				elseif addon.db.profile.bags.anchor_to_bagbar then
+					-- Reposition all visible containers when any one opens
+					DelayedCall(0.01, RepositionAllContainers)
 				end
-				-- No delayed repositioning needed - UpdateContainerFrameAnchors handles it
 			end
 		end)
 	end
