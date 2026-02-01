@@ -702,11 +702,12 @@ function addon.RefreshActionBarVisibility()
     end
 
     -- Update positioning after visibility changes
-    C_Timer.After(0.1, function()
+    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+    addon.core:ScheduleTimer(function()
         if addon.RefreshUpperActionBarsPosition then
             addon.RefreshUpperActionBarsPosition()
         end
-    end)
+    end, 0.1)
 end
 
 -- Handle combat lockdown for visibility changes
@@ -957,12 +958,15 @@ local function SetupActionBarHoverDetection(barName, frame)
     end)
 
     frame:SetScript("OnLeave", function()
-        if hoverTimers[barName] then hoverTimers[barName]:Cancel() end
-        hoverTimers[barName] = C_Timer.NewTimer(0.25, function()
+        -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+        if hoverTimers[barName] then
+            addon.core:CancelTimer(hoverTimers[barName], true)
+        end
+        hoverTimers[barName] = addon.core:ScheduleTimer(function()
             addon.visibilityStates[barName].hovered = false
             addon.UpdateActionBarVisibility(barName, frame)
             hoverTimers[barName] = nil
-        end)
+        end, 0.25)
     end)
 
     -- Button-level hover to stabilise when moving across gaps between buttons
@@ -978,13 +982,15 @@ local function SetupActionBarHoverDetection(barName, frame)
                     addon.UpdateActionBarVisibility(barName, frame)
                 end)
                 btn:HookScript("OnLeave", function()
-                    if hoverTimers[barName] then hoverTimers[barName]:Cancel() end
-                    hoverTimers[barName] = C_Timer.NewTimer(0.25, function()
+                    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+                    if hoverTimers[barName] then
+                        addon.core:CancelTimer(hoverTimers[barName], true)
+                    end
+                    hoverTimers[barName] = addon.core:ScheduleTimer(function()
                         addon.visibilityStates[barName].hovered = false
                         addon.UpdateActionBarVisibility(barName, frame)
                         hoverTimers[barName] = nil
-                    end)
-
+                    end, 0.25)
                 end)
                 btn.__DragonUI_HoverHooked = true
             end
@@ -1051,11 +1057,12 @@ local function InitializeActionBarVisibility()
         if MultiActionBar_Update then
             hooksecurefunc("MultiActionBar_Update", function()
                 -- Re-apply our visibility settings after Blizzard updates
-                C_Timer.After(0.1, function()
+                -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+                addon.core:ScheduleTimer(function()
                     if addon.RefreshActionBarVisibility then
                         addon.RefreshActionBarVisibility()
                     end
-                end)
+                end, 0.1)
             end)
         end
 
@@ -1064,7 +1071,8 @@ local function InitializeActionBarVisibility()
             hooksecurefunc(MultiBarBottomLeft, "Show", function()
                 local db = addon.db and addon.db.profile and addon.db.profile.actionbars
                 if db and not db.bottom_left_enabled and not ShouldUseAlphaVisibility("bottom_left") then
-                    C_Timer.After(0, function() MultiBarBottomLeft:Hide() end)
+                    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+                    addon.core:ScheduleTimer(function() MultiBarBottomLeft:Hide() end, 0)
                 end
             end)
         end
@@ -1073,7 +1081,8 @@ local function InitializeActionBarVisibility()
             hooksecurefunc(MultiBarBottomRight, "Show", function()
                 local db = addon.db and addon.db.profile and addon.db.profile.actionbars
                 if db and not db.bottom_right_enabled and not ShouldUseAlphaVisibility("bottom_right") then
-                    C_Timer.After(0, function() MultiBarBottomRight:Hide() end)
+                    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+                    addon.core:ScheduleTimer(function() MultiBarBottomRight:Hide() end, 0)
                 end
             end)
         end
@@ -1082,7 +1091,8 @@ local function InitializeActionBarVisibility()
             hooksecurefunc(MultiBarRight, "Show", function()
                 local db = addon.db and addon.db.profile and addon.db.profile.actionbars
                 if db and not db.right_enabled and not ShouldUseAlphaVisibility("right") then
-                    C_Timer.After(0, function() MultiBarRight:Hide() end)
+                    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+                    addon.core:ScheduleTimer(function() MultiBarRight:Hide() end, 0)
                 end
             end)
         end
@@ -1091,7 +1101,8 @@ local function InitializeActionBarVisibility()
             hooksecurefunc(MultiBarLeft, "Show", function()
                 local db = addon.db and addon.db.profile and addon.db.profile.actionbars
                 if db and not db.right2_enabled and not ShouldUseAlphaVisibility("right2") then
-                    C_Timer.After(0, function() MultiBarLeft:Hide() end)
+                    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+                    addon.core:ScheduleTimer(function() MultiBarLeft:Hide() end, 0)
                 end
             end)
         end
@@ -1099,7 +1110,8 @@ local function InitializeActionBarVisibility()
     end
 
     -- Initial visibility update
-    C_Timer.After(1, function()
+    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+    addon.core:ScheduleTimer(function()
         for barName in pairs(addon.visibilityStates or {}) do
             local frame
             if barName == "main" then
@@ -1121,7 +1133,7 @@ local function InitializeActionBarVisibility()
 
         -- Setup Blizzard hooks after initial setup
         HookBlizzardActionBars()
-    end)
+    end, 1)
 end
 
 

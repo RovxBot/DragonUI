@@ -114,9 +114,10 @@ local function InitializeStanceBarVisibility()
     end);
 
     -- Initial visibility update
-    C_Timer.After(1, function()
+    -- FIXED: Use AceTimer instead of C_Timer for 3.3.5a compatibility
+    addon.core:ScheduleTimer(function()
         UpdateStanceBarVisibility();
-    end);
+    end, 1);
 end
 
 -- Export functions

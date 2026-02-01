@@ -167,9 +167,8 @@ local function RegisterEventsForAddon(addonName, addonInfo)
     eventFrame:RegisterEvent("PARTY_CONVERTED_TO_RAID")
     eventFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
     eventFrame:RegisterEvent("PARTY_LEADER_CHANGED")
-    eventFrame:RegisterEvent("GROUP_FORMED")
-    eventFrame:RegisterEvent("GROUP_JOINED")
-    eventFrame:RegisterEvent("GROUP_LEFT")
+    -- FIXED: Removed GROUP_FORMED, GROUP_JOINED, GROUP_LEFT - these events don't exist in 3.3.5a
+    -- The above events (RAID_ROSTER_UPDATE, PARTY_MEMBERS_CHANGED, etc.) provide equivalent functionality
     
     eventFrame:SetScript("OnEvent", function(self, event)
         if compatibility.raidUpdateHandlers and compatibility.raidUpdateHandlers[addonName] then
