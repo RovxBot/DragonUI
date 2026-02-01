@@ -29,6 +29,207 @@ local bagslots = {
     _G.CharacterBag3Slot
 };
 
+local dfBase = "Interface\\AddOns\\DragonUI\\Textures\\UI\\"
+local DF_TEX_FRAME = dfBase .. "uiframemetal2x.blp"
+local DF_TEX_EDGE_H = dfBase .. "uiframemetalhorizontal2x.blp"
+local DF_TEX_EDGE_V = dfBase .. "uiframemetalvertical2x.blp"
+local DF_TEX_BG = dfBase .. "ui-background-rock.blp"
+local DF_TEX_STREAK = dfBase .. "uiframehorizontal.blp"
+local DF_TEX_CLOSE = dfBase .. "redbutton2x.blp"
+local DF_TEX_BAG_SLOT = dfBase .. "bagsitemslot2x.blp"
+local DF_TEX_BAG_BORDER = dfBase .. "ui-quickslot2.blp"
+local DF_TEX_BAG_PUSH = dfBase .. "ui-quickslot-depress.blp"
+local DF_TEX_BAG_HILIGHT = dfBase .. "buttonhilight-square.blp"
+
+local function StyleCloseButtonDF(button)
+	if not button then return end
+	button:SetSize(24, 24)
+	local normal = button:GetNormalTexture()
+	if normal then
+		normal:SetTexture(DF_TEX_CLOSE)
+		normal:SetTexCoord(0.152344, 0.292969, 0.0078125, 0.304688)
+	end
+	local disabled = button:GetDisabledTexture()
+	if disabled then
+		disabled:SetTexture(DF_TEX_CLOSE)
+		disabled:SetTexCoord(0.152344, 0.292969, 0.320312, 0.617188)
+	end
+	local pushed = button:GetPushedTexture()
+	if pushed then
+		pushed:SetTexture(DF_TEX_CLOSE)
+		pushed:SetTexCoord(0.152344, 0.292969, 0.632812, 0.929688)
+	end
+	local highlight = button:GetHighlightTexture()
+	if highlight then
+		highlight:SetTexture(DF_TEX_CLOSE)
+		highlight:SetTexCoord(0.449219, 0.589844, 0.0078125, 0.304688)
+	end
+end
+
+local function EnsureNineSlice(frame)
+	if frame.DFNineSlice then return frame.DFNineSlice end
+
+	local slice = {}
+	slice.TopLeftCorner = frame:CreateTexture(nil, "BORDER")
+	slice.TopRightCorner = frame:CreateTexture(nil, "BORDER")
+	slice.BottomLeftCorner = frame:CreateTexture(nil, "BORDER")
+	slice.BottomRightCorner = frame:CreateTexture(nil, "BORDER")
+	slice.TopEdge = frame:CreateTexture(nil, "BORDER")
+	slice.BottomEdge = frame:CreateTexture(nil, "BORDER")
+	slice.LeftEdge = frame:CreateTexture(nil, "BORDER")
+	slice.RightEdge = frame:CreateTexture(nil, "BORDER")
+
+	frame.DFNineSlice = slice
+	return slice
+end
+
+local function ApplyDFFrameTemplateNoPortrait(frame)
+	local slice = EnsureNineSlice(frame)
+
+	slice.TopLeftCorner:ClearAllPoints()
+	slice.TopLeftCorner:SetTexture(DF_TEX_FRAME)
+	slice.TopLeftCorner:SetTexCoord(0.00195312, 0.294922, 0.00195312, 0.294922)
+	slice.TopLeftCorner:SetSize(75, 74)
+	slice.TopLeftCorner:SetPoint("TOPLEFT", -12, 16)
+
+	slice.TopRightCorner:ClearAllPoints()
+	slice.TopRightCorner:SetTexture(DF_TEX_FRAME)
+	slice.TopRightCorner:SetTexCoord(0.298828, 0.591797, 0.00195312, 0.294922)
+	slice.TopRightCorner:SetSize(75, 74)
+	slice.TopRightCorner:SetPoint("TOPRIGHT", 4, 16)
+
+	slice.BottomLeftCorner:ClearAllPoints()
+	slice.BottomLeftCorner:SetTexture(DF_TEX_FRAME)
+	slice.BottomLeftCorner:SetTexCoord(0.298828, 0.423828, 0.298828, 0.423828)
+	slice.BottomLeftCorner:SetSize(32, 32)
+	slice.BottomLeftCorner:SetPoint("BOTTOMLEFT", -12, -3)
+
+	slice.BottomRightCorner:ClearAllPoints()
+	slice.BottomRightCorner:SetTexture(DF_TEX_FRAME)
+	slice.BottomRightCorner:SetTexCoord(0.427734, 0.552734, 0.298828, 0.423828)
+	slice.BottomRightCorner:SetSize(32, 32)
+	slice.BottomRightCorner:SetPoint("BOTTOMRIGHT", 4, -3)
+
+	slice.TopEdge:ClearAllPoints()
+	slice.TopEdge:SetTexture(DF_TEX_EDGE_H)
+	slice.TopEdge:SetTexCoord(0, 1, 0.00390625, 0.589844)
+	slice.TopEdge:SetSize(32, 74)
+	slice.TopEdge:SetPoint("TOPLEFT", slice.TopLeftCorner, "TOPRIGHT", 0, 0)
+	slice.TopEdge:SetPoint("TOPRIGHT", slice.TopRightCorner, "TOPLEFT", 0, 0)
+
+	slice.BottomEdge:ClearAllPoints()
+	slice.BottomEdge:SetTexture(DF_TEX_EDGE_H)
+	slice.BottomEdge:SetTexCoord(0, 0.5, 0.597656, 0.847656)
+	slice.BottomEdge:SetSize(16, 32)
+	slice.BottomEdge:SetPoint("TOPLEFT", slice.BottomLeftCorner, "TOPRIGHT", 0, 0)
+	slice.BottomEdge:SetPoint("TOPRIGHT", slice.BottomRightCorner, "TOPLEFT", 0, 0)
+
+	slice.LeftEdge:ClearAllPoints()
+	slice.LeftEdge:SetTexture(DF_TEX_EDGE_V)
+	slice.LeftEdge:SetTexCoord(0.00195312, 0.294922, 0, 1)
+	slice.LeftEdge:SetSize(75, 16)
+	slice.LeftEdge:SetPoint("TOPLEFT", slice.TopLeftCorner, "BOTTOMLEFT", 0, 0)
+	slice.LeftEdge:SetPoint("BOTTOMLEFT", slice.BottomLeftCorner, "TOPLEFT", 0, 0)
+
+	slice.RightEdge:ClearAllPoints()
+	slice.RightEdge:SetTexture(DF_TEX_EDGE_V)
+	slice.RightEdge:SetTexCoord(0.298828, 0.591797, 0, 1)
+	slice.RightEdge:SetSize(75, 16)
+	slice.RightEdge:SetPoint("TOPRIGHT", slice.TopRightCorner, "BOTTOMRIGHT", 0, 0)
+	slice.RightEdge:SetPoint("BOTTOMRIGHT", slice.BottomRightCorner, "TOPRIGHT", 0, 0)
+end
+
+local function ApplyDFBackground(frame)
+	if frame.DFBg then return end
+	local bg = frame:CreateTexture(nil, "BACKGROUND", nil, -2)
+	bg:SetTexture(DF_TEX_BG)
+	bg:SetAllPoints(frame)
+	frame.DFBg = bg
+
+	local streak = frame:CreateTexture(nil, "ARTWORK", nil, 2)
+	streak:SetTexture(DF_TEX_STREAK)
+	streak:SetTexCoord(0, 1, 0.0078125, 0.34375)
+	streak:SetSize(256, 43)
+	streak:SetPoint("TOPLEFT", frame, "TOPLEFT", 6, -21)
+	streak:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -21)
+	frame.DFStreak = streak
+end
+
+local function StyleContainerItemButton(btn)
+	if not btn or btn.DFSkinned then return end
+	btn.DFSkinned = true
+
+	btn:SetPushedTexture(DF_TEX_BAG_PUSH)
+	btn:SetHighlightTexture(DF_TEX_BAG_HILIGHT)
+	local pushed = btn:GetPushedTexture()
+	if pushed then
+		pushed:SetAllPoints(btn)
+	end
+	local highlight = btn:GetHighlightTexture()
+	if highlight then
+		highlight:SetAllPoints(btn)
+		highlight:SetBlendMode("ADD")
+	end
+
+	local bg = btn:CreateTexture(nil, "BACKGROUND", nil, 1)
+	bg:SetTexture(DF_TEX_BAG_SLOT)
+	bg:SetAllPoints(btn)
+	btn.DFBg = bg
+
+	local border = btn:CreateTexture(nil, "OVERLAY", nil, 2)
+	border:SetTexture(DF_TEX_BAG_BORDER)
+	border:SetPoint("CENTER", btn, "CENTER", 0, -1)
+	border:SetSize(64, 64)
+	btn.DFBorder = border
+
+	local icon = _G[btn:GetName() .. "IconTexture"]
+	if icon then
+		icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		icon:SetPoint("TOPLEFT", btn, "TOPLEFT", 3, -3)
+		icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -3, 3)
+	end
+
+	if btn.IconBorder then
+		btn.IconBorder:Hide()
+	end
+end
+
+local function SkinContainerFrame(frame)
+	if not frame or frame.DFSkinned then return end
+	frame.DFSkinned = true
+
+	local regions = { frame:GetRegions() }
+	for _, region in ipairs(regions) do
+		if region and region:GetObjectType() == "Texture" then
+			region:Hide()
+			region:SetTexture(nil)
+			region:SetAlpha(0)
+		end
+	end
+
+	ApplyDFFrameTemplateNoPortrait(frame)
+	ApplyDFBackground(frame)
+
+	local closeBtn = _G[frame:GetName() .. "CloseButton"]
+	if closeBtn then
+		StyleCloseButtonDF(closeBtn)
+		closeBtn:ClearAllPoints()
+		closeBtn:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 1, 0)
+	end
+
+	local title = _G[frame:GetName() .. "Name"]
+	if title then
+		title:SetPoint("TOP", frame, "TOP", 0, -5)
+	end
+
+	for i = 1, frame.size or 0 do
+		local btn = _G[frame:GetName() .. "Item" .. i]
+		if btn then
+			StyleContainerItemButton(btn)
+		end
+	end
+end
+
 -- Function to ensure loot animation always goes to main backpack when bags are collapsed
 local function EnsureLootAnimationToMainBag()
 	-- Simple approach: when bags are hidden, WoW should naturally redirect loot to main bag
@@ -1587,9 +1788,13 @@ end
 
 -- Store original function
 local originalUpdateContainerFrameAnchors = UpdateContainerFrameAnchors
+local inBagFrameBuild = false
 
 -- Custom container anchoring that positions above bag bar
 function UpdateContainerFrameAnchors()
+	if inBagFrameBuild then
+		return
+	end
 	-- Check if we should use custom positioning
 	if not addon.db or not addon.db.profile or not addon.db.profile.bags then
 		return originalUpdateContainerFrameAnchors()
@@ -1654,22 +1859,8 @@ local function CreateCombinedBagFrame()
 	frame:SetMovable(true)
 	frame:Hide()
 	
-	-- Create background
-	local bg = frame:CreateTexture(nil, "BACKGROUND")
-	bg:SetAllPoints()
-	bg:SetTexture(0, 0, 0, 0.8)
-	frame.bg = bg
-	
-	-- Create border
-	local border = CreateFrame("Frame", nil, frame)
-	border:SetPoint("TOPLEFT", -4, 4)
-	border:SetPoint("BOTTOMRIGHT", 4, -4)
-	border:SetBackdrop({
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		edgeSize = 16,
-	})
-	border:SetBackdropBorderColor(0.6, 0.6, 0.6, 1)
-	frame.border = border
+	ApplyDFFrameTemplateNoPortrait(frame)
+	ApplyDFBackground(frame)
 	
 	-- Create title bar
 	local titleBar = CreateFrame("Frame", nil, frame)
@@ -1691,6 +1882,7 @@ local function CreateCombinedBagFrame()
 	-- Close button
 	local closeBtn = CreateFrame("Button", nil, titleBar, "UIPanelCloseButton")
 	closeBtn:SetPoint("TOPRIGHT", 2, 2)
+	StyleCloseButtonDF(closeBtn)
 	closeBtn:SetScript("OnClick", function() frame:Hide() end)
 	frame.closeBtn = closeBtn
 	
@@ -1704,14 +1896,32 @@ local function CreateCombinedBagFrame()
 	slotsText:SetPoint("BOTTOMRIGHT", -8, 6)
 	frame.slotsText = slotsText
 	
-	-- Container for item buttons
 	frame.itemButtons = {}
 	frame.columns = 10
 	frame.buttonSize = 37
 	frame.buttonPadding = 4
+	frame.dummyBags = setmetatable({}, {
+		__index = function(t, k)
+			local f = CreateFrame("Frame", nil, frame)
+			f:SetID(k)
+			t[k] = f
+			return f
+		end
+	})
 	
 	CombinedBagFrame = frame
 	return frame
+end
+
+local function HideCombinedContainerFrames()
+	for i = 1, NUM_CONTAINER_FRAMES or 13 do
+		local containerFrame = _G["ContainerFrame" .. i]
+		if containerFrame and containerFrame.bagID and containerFrame.bagID <= 4 then
+			containerFrame:SetAlpha(0)
+			containerFrame:EnableMouse(false)
+			containerFrame:Hide()
+		end
+	end
 end
 
 -- Update the combined bag frame contents
@@ -1719,16 +1929,14 @@ local function UpdateCombinedBagFrame()
 	if not CombinedBagFrame or not CombinedBagFrame:IsShown() then
 		return
 	end
+	if InCombatLockdown and InCombatLockdown() then
+		return
+	end
 	
 	local frame = CombinedBagFrame
 	local columns = frame.columns
 	local buttonSize = frame.buttonSize
 	local padding = frame.buttonPadding
-	
-	-- Clear existing buttons
-	for _, btn in pairs(frame.itemButtons) do
-		btn:Hide()
-	end
 	
 	-- Collect all bag slots
 	local allSlots = {}
@@ -1774,14 +1982,19 @@ local function UpdateCombinedBagFrame()
 		frame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", right, top + 10)
 	end
 	
-	-- Create/update item buttons
 	for i, slotData in ipairs(allSlots) do
-		local btn = frame.itemButtons[i]
+		local key = slotData.bag .. ":" .. slotData.slot
+		local btn = frame.itemButtons[key]
 		if not btn then
-			btn = CreateFrame("Button", "DragonUICombinedBagButton" .. i, frame, "ContainerFrameItemButtonTemplate")
-			frame.itemButtons[i] = btn
+			btn = CreateFrame("Button", "DragonUICombinedBagItem" .. slotData.bag .. "_" .. slotData.slot, frame.dummyBags[slotData.bag], "ContainerFrameItemButtonTemplate")
+			btn:SetID(slotData.slot)
+			StyleContainerItemButton(btn)
+			frame.itemButtons[key] = btn
+		else
+			btn:SetParent(frame.dummyBags[slotData.bag])
+			btn:SetID(slotData.slot)
 		end
-		
+
 		local col = ((i - 1) % columns)
 		local row = math.floor((i - 1) / columns)
 		local x = padding + 8 + (col * (buttonSize + padding))
@@ -1790,51 +2003,29 @@ local function UpdateCombinedBagFrame()
 		btn:ClearAllPoints()
 		btn:SetPoint("TOPLEFT", frame, "TOPLEFT", x, y)
 		btn:SetSize(buttonSize, buttonSize)
-		btn:SetID(slotData.slot)
-		btn.bagID = slotData.bag
 		
-		-- Set up click handling
-		btn:SetScript("OnClick", function(self, button)
-			if button == "LeftButton" then
-				if IsShiftKeyDown() then
-					-- Link item
-					local link = GetContainerItemLink(self.bagID, self:GetID())
-					if link then
-						ChatEdit_InsertLink(link)
-					end
-				else
-					-- Pick up or use item
-					PickupContainerItem(self.bagID, self:GetID())
-				end
-			elseif button == "RightButton" then
-				UseContainerItem(self.bagID, self:GetID())
-			end
-		end)
-		
-		-- Update button appearance
-		local icon = _G[btn:GetName() .. "IconTexture"]
-		local count = _G[btn:GetName() .. "Count"]
-		
-		if slotData.texture then
-			icon:SetTexture(slotData.texture)
-			icon:Show()
-			if slotData.count and slotData.count > 1 then
-				count:SetText(slotData.count)
-				count:Show()
-			else
-				count:Hide()
-			end
+		-- Manual update (ContainerFrameItemButton_Update is not global in 3.3.5)
+		local texture, count, locked, quality, readable = GetContainerItemInfo(slotData.bag, slotData.slot)
+		SetItemButtonTexture(btn, texture)
+		SetItemButtonCount(btn, count)
+		SetItemButtonDesaturated(btn, locked)
+		if quality and quality >= 0 then
+			local r, g, b = GetItemQualityColor(quality)
+			SetItemButtonTextureVertexColor(btn, r, g, b)
 		else
-			icon:Hide()
-			count:Hide()
+			SetItemButtonTextureVertexColor(btn, 1, 1, 1)
 		end
+		if ContainerFrame_UpdateCooldown then
+			ContainerFrame_UpdateCooldown(slotData.bag, btn)
+		end
+
 		
 		-- Quality border
-		if slotData.quality and slotData.quality > 1 then
+		if slotData.quality and slotData.quality > 1 and btn.DFBorder then
 			local r, g, b = GetItemQualityColor(slotData.quality)
-			btn:SetBackdropBorderColor(r, g, b, 1)
-		else
-			btn:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+			btn.DFBorder:SetVertexColor(r, g, b)
+		elseif btn.DFBorder then
+			btn.DFBorder:SetVertexColor(1, 1, 1)
 		end
 		
 		btn:Show()
@@ -1843,11 +2034,24 @@ local function UpdateCombinedBagFrame()
 	-- Update footer text
 	frame.goldText:SetText(GetCoinTextureString(GetMoney()))
 	frame.slotsText:SetText(totalFree .. "/" .. totalSlots .. " Free")
+
+	HideCombinedContainerFrames()
 end
+
+-- Preserve original OpenAllBags for combined toggle fallback
+local originalOpenAllBags = OpenAllBags
+local inCombinedToggle = false
 
 -- Toggle combined bag frame
 function addon.ToggleCombinedBags()
 	local frame = CreateCombinedBagFrame()
+	if inCombinedToggle then return end
+	if InCombatLockdown and InCombatLockdown() then
+		inCombinedToggle = true
+		if originalOpenAllBags then originalOpenAllBags() end
+		inCombinedToggle = false
+		return
+	end
 	
 	if frame:IsShown() then
 		frame:Hide()
@@ -1856,16 +2060,9 @@ function addon.ToggleCombinedBags()
 			ToggleAllBags()
 		end
 	else
-		-- Hide individual container frames
-		for i = 1, NUM_CONTAINER_FRAMES or 13 do
-			local containerFrame = _G["ContainerFrame" .. i]
-			if containerFrame then
-				containerFrame:Hide()
-			end
-		end
-		
 		frame:Show()
 		UpdateCombinedBagFrame()
+		HideCombinedContainerFrames()
 	end
 end
 
@@ -1879,6 +2076,9 @@ end
 -- Override the default bag toggle function
 local originalToggleBag = ToggleBag
 function ToggleBag(bagID)
+	if inCombinedToggle then
+		return originalToggleBag(bagID)
+	end
 	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.combine_bags then
 		addon.ToggleCombinedBags()
 	else
@@ -1889,6 +2089,9 @@ end
 -- Override ToggleAllBags
 local originalToggleAllBags = ToggleAllBags
 function ToggleAllBags()
+	if inCombinedToggle then
+		return originalToggleAllBags()
+	end
 	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.combine_bags then
 		addon.ToggleCombinedBags()
 	else
@@ -1896,10 +2099,15 @@ function ToggleAllBags()
 	end
 end
 
--- Override OpenAllBags
-local originalOpenAllBags = OpenAllBags
 function OpenAllBags()
+	if inCombinedToggle then
+		return originalOpenAllBags()
+	end
 	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.combine_bags then
+		if InCombatLockdown and InCombatLockdown() then
+			originalOpenAllBags()
+			return
+		end
 		local frame = CreateCombinedBagFrame()
 		frame:Show()
 		UpdateCombinedBagFrame()
@@ -1978,12 +2186,14 @@ for i = 1, NUM_CONTAINER_FRAMES or 13 do
 	local containerFrame = _G["ContainerFrame" .. i]
 	if containerFrame then
 		containerFrame:HookScript("OnShow", function()
+			if inBagFrameBuild then return end
 			if addon.db and addon.db.profile and addon.db.profile.bags then
 				if addon.db.profile.bags.combine_bags then
 					containerFrame:Hide()
 					local frame = CreateCombinedBagFrame()
 					frame:Show()
 					UpdateCombinedBagFrame()
+					HideCombinedContainerFrames()
 				elseif addon.db.profile.bags.anchor_to_bagbar then
 					-- Hide immediately, will be shown after repositioning
 					containerFrame:SetAlpha(0)
@@ -1994,6 +2204,11 @@ for i = 1, NUM_CONTAINER_FRAMES or 13 do
 					end)
 				end
 			end
+			SkinContainerFrame(containerFrame)
+		end)
+		containerFrame:HookScript("OnHide", function()
+			containerFrame:SetAlpha(1)
+			containerFrame:EnableMouse(true)
 		end)
 	end
 end

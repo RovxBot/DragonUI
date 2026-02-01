@@ -10,6 +10,7 @@ local function Enabled()
 end
 
 local TalentUI = { frame = nil, trees = {}, buttons = {}, header = {}, branchArrays = {}, branchTextures = {}, arrowTextures = {} }
+local MAX_TALENT_TIERS = 11
 
 local function CreateHeader(parent)
     local left = parent:CreateTexture(nil, 'ARTWORK')
@@ -43,7 +44,7 @@ local function CreateMainFrame()
     if TalentUI.frame then return end
 
     local f = CreateFrame('Frame', 'DRAGONUI_TalentFrame', UIParent)
-    f:SetSize(1020, 600)
+    f:SetSize(1020, 800)
     f:SetFrameStrata('HIGH')
     f:SetPoint('CENTER')
     f:SetBackdrop({ bgFile = 'Interface\\DialogFrame\\UI-DialogBox-Background' })
@@ -93,8 +94,8 @@ local function CreateTreeFrames()
 
     for i = 1, 3 do
         local tree = CreateFrame('Frame', nil, f)
-        tree:SetSize(300, 500)
-        tree:SetPoint('TOPLEFT', f, 'TOPLEFT', xOffsets[i] + 20, -50)
+        tree:SetSize(300, 720)
+        tree:SetPoint('TOPLEFT', f, 'TOPLEFT', xOffsets[i] + 20, -40)
 
         local header = tree:CreateFontString(nil, 'OVERLAY', 'GameFontNormalLarge')
         header:SetPoint('TOP', 0, 20)
@@ -111,16 +112,16 @@ local function CreateTreeFrames()
 
         -- class background
         local bgTL = tree:CreateTexture(nil, 'BACKGROUND')
-        bgTL:SetSize(200, 300)
+        bgTL:SetSize(220, 360)
         bgTL:SetPoint('TOPLEFT', 20, -30)
         local bgTR = tree:CreateTexture(nil, 'BACKGROUND')
-        bgTR:SetSize(100, 300)
+        bgTR:SetSize(110, 360)
         bgTR:SetPoint('TOPRIGHT', 20, -30)
         local bgBL = tree:CreateTexture(nil, 'BACKGROUND')
-        bgBL:SetSize(200, 200)
+        bgBL:SetSize(220, 360)
         bgBL:SetPoint('BOTTOMLEFT', 20, -30)
         local bgBR = tree:CreateTexture(nil, 'BACKGROUND')
-        bgBR:SetSize(100, 200)
+        bgBR:SetSize(110, 360)
         bgBR:SetPoint('BOTTOMRIGHT', 20, -30)
 
         local _, _, _, fileName = GetTalentTabInfo(i)
@@ -134,7 +135,7 @@ local function CreateTreeFrames()
 
         -- init arrays and texture pools for this tree
         TalentUI.branchArrays[i] = {}
-        for tier = 1, 8 do
+        for tier = 1, MAX_TALENT_TIERS do
             TalentUI.branchArrays[i][tier] = {}
             for col = 1, 4 do
                 TalentUI.branchArrays[i][tier][col] = { id=nil, up=0, down=0, left=0, right=0, leftArrow=0, rightArrow=0, topArrow=0 }
@@ -168,7 +169,7 @@ local TALENT_ARROW_TEXTURECOORDS = {
 local function ResetBranches(tabIndex)
     local arr = TalentUI.branchArrays[tabIndex]
     if not arr then return end
-    for tier = 1, 8 do
+    for tier = 1, MAX_TALENT_TIERS do
         for col = 1, 4 do
             local node = arr[tier][col]
             node.id = nil; node.up=0; node.down=0; node.left=0; node.right=0; node.leftArrow=0; node.rightArrow=0; node.topArrow=0
@@ -249,11 +250,11 @@ end
 
 local function DrawBranches(tabIndex)
     local arr = TalentUI.branchArrays[tabIndex]
-    for tier = 1, 8 do
+    for tier = 1, MAX_TALENT_TIERS do
         for col = 1, 4 do
             local node = arr[tier][col]
             local xOffset = (col - 1) * 63 + 35 + 2
-            local yOffset = -(tier - 1) * 63 - 50 - 2
+            local yOffset = -(tier - 1) * 63 - 40 - 2
             if node.id then
                 if node.up ~= 0    then SetBranchTexture(tabIndex, TALENT_BRANCH_TEXTURECOORDS.up[node.up], xOffset, yOffset + 32) end
                 if node.down ~= 0  then SetBranchTexture(tabIndex, TALENT_BRANCH_TEXTURECOORDS.down[node.down], xOffset, yOffset - 32 + 1) end
@@ -281,7 +282,7 @@ local function CreateTalentButton(tabIndex, talentIndex, tier, column)
     local btn = CreateFrame('Button', nil, tree)
     btn:SetSize(32, 32)
     local x = (column - 1) * 63 + 35
-    local y = -(tier - 1) * 63 - 50
+    local y = -(tier - 1) * 63 - 40
     btn:SetPoint('TOPLEFT', x + 10, y)
 
     local icon = btn:CreateTexture(nil, 'ARTWORK')
@@ -373,7 +374,7 @@ local function UpdateTalents()
             end
 
             -- mark node and set any prereq branches for this talent
-            if tier and column then
+            if tier and column and TalentUI.branchArrays[tab] and TalentUI.branchArrays[tab][tier] and TalentUI.branchArrays[tab][tier][column] then
                 TalentUI.branchArrays[tab][tier][column].id = t
                 local tierUnlocked = pointsSpent >= ((tier - 1) * 5)
                 local forceDesaturated = (rank == 0) and not tierUnlocked
@@ -422,6 +423,12 @@ local function OnEvent()
     if not origToggle then origToggle = _G.ToggleTalentFrame end
     _G.ToggleTalentFrame = Toggle
     HookMicro()
+
+    if TalentMicroButton then
+        TalentMicroButton:SetScript('OnClick', function()
+            Toggle()
+        end)
+    end
 
     local ef = CreateFrame('Frame')
     ef:RegisterEvent('CHARACTER_POINTS_CHANGED')
