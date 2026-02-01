@@ -324,6 +324,12 @@ function MainMenuBarMixin:actionbar_setup()
 	-- MultiBarLeft:SetClearPoint('TOPRIGHT', MultiBarRight, 'TOPLEFT', -7, 0)
 end
 
+-- Helper to check if a frame has a saved mover position
+local function hasMoverPosition(key)
+    local movers = addon.db and addon.db.profile and addon.db.profile.movers
+    return movers and movers[key] ~= nil
+end
+
 function addon.PositionActionBars()
     if InCombatLockdown() then return end
 
@@ -336,7 +342,6 @@ function addon.PositionActionBars()
     -- 1. Barra Principal (pUiMainBar)
     if pUiMainBar then
         pUiMainBar:SetMovable(true)
-        pUiMainBar:ClearAllPoints()
 
         -- Apply scaling
         pUiMainBar:SetScale(db.scale_actionbar or 0.9)
@@ -347,21 +352,24 @@ function addon.PositionActionBars()
                 db.player.rows or 1, db.player.columns or 12, db.player.buttons_shown or 12)
         end
 
-        if db.player.override then
-            -- MODO MANUAL: Posición guardada por el usuario.
-            -- ✅ CORRECCIÓN: Dividimos por la escala para convertir píxeles a puntos.
-            pUiMainBar:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.player.x or 0) / scale, (db.player.y or 0) / scale)
-        else
-            -- MODO AUTOMÁTICO: Posicionamiento por defecto.
-            pUiMainBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, db.player.y_position_offset or 75)
+        -- Skip positioning if mover system has a saved position (mover takes priority)
+        if not hasMoverPosition('mainbar') then
+            pUiMainBar:ClearAllPoints()
+            if db.player.override then
+                -- MODO MANUAL: Posición guardada por el usuario.
+                -- ✅ CORRECCIÓN: Dividimos por la escala para convertir píxeles a puntos.
+                pUiMainBar:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.player.x or 0) / scale, (db.player.y or 0) / scale)
+            else
+                -- MODO AUTOMÁTICO: Posicionamiento por defecto.
+                pUiMainBar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, db.player.y_position_offset or 75)
+            end
+            pUiMainBar:SetUserPlaced(db.player.override)
         end
-        pUiMainBar:SetUserPlaced(db.player.override)
     end
 
     -- 2. Barra Derecha (MultiBarRight)
     if MultiBarRight then
         MultiBarRight:SetMovable(true)
-        MultiBarRight:ClearAllPoints()
 
         -- Apply scaling
         MultiBarRight:SetScale(db.scale_rightbar or 0.9)
@@ -372,21 +380,23 @@ function addon.PositionActionBars()
                 db.right.rows or 1, db.right.columns or 12, db.right.buttons_shown or 12)
         end
 
-        if db.right.override then
-            -- MODO MANUAL
-            -- ✅ CORRECCIÓN: Dividimos por la escala.
-            MultiBarRight:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.right.x or 0) / scale, (db.right.y or 0) / scale)
-        else
-            -- MODO AUTOMÁTICO
-            MultiBarRight:SetPoint("RIGHT", UIParent, "RIGHT", -5, -70)
+        -- Skip positioning if mover system has a saved position
+        if not hasMoverPosition('right') then
+            MultiBarRight:ClearAllPoints()
+            if db.right.override then
+                -- MODO MANUAL
+                MultiBarRight:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.right.x or 0) / scale, (db.right.y or 0) / scale)
+            else
+                -- MODO AUTOMÁTICO
+                MultiBarRight:SetPoint("RIGHT", UIParent, "RIGHT", -5, -70)
+            end
+            MultiBarRight:SetUserPlaced(db.right.override)
         end
-        MultiBarRight:SetUserPlaced(db.right.override)
     end
 
     -- 3. Barra Izquierda (MultiBarLeft)
     if MultiBarLeft then
         MultiBarLeft:SetMovable(true)
-        MultiBarLeft:ClearAllPoints()
 
         -- Apply scaling
         MultiBarLeft:SetScale(db.scale_leftbar or 0.9)
@@ -397,20 +407,18 @@ function addon.PositionActionBars()
                 db.left.rows or 1, db.left.columns or 12, db.left.buttons_shown or 12)
         end
 
-        if db.left.override then
-            -- MODO MANUAL
-            -- ✅ CORRECCIÓN: Dividimos por la escala.
-            MultiBarLeft:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.left.x or 0) / scale, (db.left.y or 0) / scale)
-        else
-            -- MODO AUTOMÁTICO: Anclada a la barra derecha si esta no ha sido movida.
-            if not db.right.override then
-                 MultiBarLeft:SetPoint("RIGHT", MultiBarRight, "LEFT", -5, 0)
+        -- Skip positioning if mover system has a saved position
+        if not hasMoverPosition('right2') then
+            MultiBarLeft:ClearAllPoints()
+            if db.left.override then
+                -- MODO MANUAL
+                MultiBarLeft:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.left.x or 0) / scale, (db.left.y or 0) / scale)
             else
-                -- Si la barra derecha fue movida, la izquierda se ancla a la pantalla para no quedar huérfana.
+                -- MODO AUTOMÁTICO: Anclada a la barra derecha
                 MultiBarLeft:SetPoint("RIGHT", MultiBarRight, "LEFT", -5, 0)
             end
+            MultiBarLeft:SetUserPlaced(db.left.override)
         end
-        MultiBarLeft:SetUserPlaced(db.left.override)
     end
 
     -- ========================================
@@ -420,7 +428,6 @@ function addon.PositionActionBars()
     -- 4a. Bottom Left Bar (MultiBarBottomLeft)
     if MultiBarBottomLeft then
         MultiBarBottomLeft:SetMovable(true)
-        MultiBarBottomLeft:ClearAllPoints()
 
         -- Apply scaling
         MultiBarBottomLeft:SetScale(db.scale_bottom_left or 0.9)
@@ -431,21 +438,23 @@ function addon.PositionActionBars()
                 db.bottom_left.rows or 1, db.bottom_left.columns or 12, db.bottom_left.buttons_shown or 12)
         end
 
-        if db.bottom_left.override then
-            -- MODO MANUAL: User-defined position
-            MultiBarBottomLeft:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.bottom_left.x or 0) / scale, (db.bottom_left.y or 0) / scale)
-        else
-            -- MODO AUTOMÁTICO: Independent positioning - NOT tied to ActionButton1
-            -- This will be handled by RefreshUpperActionBarsPosition
-            MultiBarBottomLeft:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 120)
+        -- Skip positioning if mover system has a saved position
+        if not hasMoverPosition('bottomleft') then
+            MultiBarBottomLeft:ClearAllPoints()
+            if db.bottom_left.override then
+                -- MODO MANUAL: User-defined position
+                MultiBarBottomLeft:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.bottom_left.x or 0) / scale, (db.bottom_left.y or 0) / scale)
+            else
+                -- MODO AUTOMÁTICO: Will be refined by RefreshUpperActionBarsPosition
+                MultiBarBottomLeft:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 120)
+            end
+            MultiBarBottomLeft:SetUserPlaced(db.bottom_left.override)
         end
-        MultiBarBottomLeft:SetUserPlaced(db.bottom_left.override)
     end
 
     -- 4b. Bottom Right Bar (MultiBarBottomRight)
     if MultiBarBottomRight then
         MultiBarBottomRight:SetMovable(true)
-        MultiBarBottomRight:ClearAllPoints()
 
         -- Apply scaling
         MultiBarBottomRight:SetScale(db.scale_bottom_right or 0.9)
@@ -456,15 +465,18 @@ function addon.PositionActionBars()
                 db.bottom_right.rows or 1, db.bottom_right.columns or 12, db.bottom_right.buttons_shown or 12)
         end
 
-        if db.bottom_right.override then
-            -- MODO MANUAL: User-defined position
-            MultiBarBottomRight:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.bottom_right.x or 0) / scale, (db.bottom_right.y or 0) / scale)
-        else
-            -- MODO AUTOMÁTICO: Default positioning above bottom left bar
-            -- This will be handled by RefreshUpperActionBarsPosition
-            MultiBarBottomRight:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 170)
+        -- Skip positioning if mover system has a saved position
+        if not hasMoverPosition('bottomright') then
+            MultiBarBottomRight:ClearAllPoints()
+            if db.bottom_right.override then
+                -- MODO MANUAL: User-defined position
+                MultiBarBottomRight:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (db.bottom_right.x or 0) / scale, (db.bottom_right.y or 0) / scale)
+            else
+                -- MODO AUTOMÁTICO: Will be refined by RefreshUpperActionBarsPosition
+                MultiBarBottomRight:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 170)
+            end
+            MultiBarBottomRight:SetUserPlaced(db.bottom_right.override)
         end
-        MultiBarBottomRight:SetUserPlaced(db.bottom_right.override)
     end
 end
 
@@ -602,11 +614,11 @@ function addon.RefreshUpperActionBarsPosition()
     local db = addon.db and addon.db.profile and addon.db.profile.mainbars
     if not db or not db.player then
         -- Fallback to original positioning if no config
-        if MultiBarBottomLeft and not db.bottom_left.override then
+        if MultiBarBottomLeft and not hasMoverPosition('bottomleft') and not (db and db.bottom_left and db.bottom_left.override) then
             MultiBarBottomLeft:ClearAllPoints()
             MultiBarBottomLeft:SetPoint('BOTTOMLEFT', pUiMainBar, 'TOPLEFT', 0, 8)
         end
-        if MultiBarBottomRight and not db.bottom_right.override then
+        if MultiBarBottomRight and not hasMoverPosition('bottomright') and not (db and db.bottom_right and db.bottom_right.override) then
             MultiBarBottomRight:ClearAllPoints()
             MultiBarBottomRight:SetPoint('BOTTOMLEFT', MultiBarBottomLeft, 'TOPLEFT', 0, 8)
         end
@@ -635,13 +647,13 @@ function addon.RefreshUpperActionBarsPosition()
         yOffset2 = bottomLeftHeight + 8
     end
 
-    -- Reposition the BAR FRAMES (not button 1) - only if not manually positioned
-    if MultiBarBottomLeft and not (db.bottom_left and db.bottom_left.override) then
+    -- Reposition the BAR FRAMES - only if not using mover system and not manually positioned
+    if MultiBarBottomLeft and not hasMoverPosition('bottomleft') and not (db.bottom_left and db.bottom_left.override) then
         MultiBarBottomLeft:ClearAllPoints()
         MultiBarBottomLeft:SetPoint('BOTTOMLEFT', pUiMainBar, 'BOTTOMLEFT', 0, yOffset1)
     end
 
-    if MultiBarBottomRight and not (db.bottom_right and db.bottom_right.override) then
+    if MultiBarBottomRight and not hasMoverPosition('bottomright') and not (db.bottom_right and db.bottom_right.override) then
         MultiBarBottomRight:ClearAllPoints()
         MultiBarBottomRight:SetPoint('BOTTOMLEFT', MultiBarBottomLeft, 'BOTTOMLEFT', 0, yOffset2)
     end
