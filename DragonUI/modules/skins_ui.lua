@@ -2,11 +2,10 @@ local addon = select(2, ...)
 
 -- DragonUI UI Skins - Authentic Dragonflight panel styling
 -- Uses the 4-corner paperdoll textures for the DF look
--- Supports: CharacterFrame, SpellBook, QuestLog, Friends/Who/Guild
 
 local texBase = "Interface\\AddOns\\DragonUI\\assets\\ui\\"
 
--- Texture paths for DF panel backgrounds
+-- Texture paths
 local TEX_TOP_LEFT = texBase .. "paperdoll_top_left.tga"
 local TEX_TOP_RIGHT = texBase .. "paperdoll_top_right.tga"
 local TEX_BOT_LEFT = texBase .. "paperdoll_bot_left.tga"
@@ -23,120 +22,103 @@ local function safeHookScript(frame, script, func)
     end
 end
 
--- Hide all background textures on a frame
-local function HideFrameTextures(frame, patterns)
+-- Aggressively hide ALL textures on a frame (except portraits)
+local function HideAllFrameTextures(frame)
     if not frame then return end
-    
-    -- Hide by global name
-    if patterns then
-        for _, name in ipairs(patterns) do
-            local tex = _G[name]
-            if tex then 
-                tex:Hide()
-                tex:SetAlpha(0)
-            end
-        end
-    end
-    
-    -- Hide by iterating regions
     local regions = { frame:GetRegions() }
     for _, region in ipairs(regions) do
         if region and region:GetObjectType() == "Texture" then
-            local tex = region:GetTexture()
-            if tex then
-                local texLower = string.lower(tex)
-                if string.find(texLower, "ui%-character") or
-                   string.find(texLower, "paperdoll") or
-                   string.find(texLower, "ui%-spellbook") or
-                   string.find(texLower, "ui%-questlog") or
-                   string.find(texLower, "ui%-friendsframe") or
-                   string.find(texLower, "dialogframe") or
-                   string.find(texLower, "parchment") then
-                    region:Hide()
-                    region:SetAlpha(0)
-                end
+            local name = region:GetName() or ""
+            if not string.find(string.lower(name), "portrait") then
+                region:SetTexture(nil)
+                region:Hide()
+                region:SetAlpha(0)
             end
         end
     end
 end
 
--- Create DF-style 4-corner panel background
--- This creates the authentic Dragonflight look using the paperdoll textures
-local function CreateDFPanelBackground(frame, offsetL, offsetR, offsetT, offsetB)
+-- Hide textures by global name
+local function HideNamedTextures(names)
+    for _, name in ipairs(names) do
+        local tex = _G[name]
+        if tex then 
+            tex:SetTexture(nil)
+            tex:Hide()
+            tex:SetAlpha(0)
+        end
+    end
+end
+
+-- Create DF-style panel background
+-- Solid dark base + 4-corner decorative textures
+local function CreateDFPanelBackground(frame)
     if not frame or frame.DragonUI_DFBackground then return end
     
-    offsetL = offsetL or 0
-    offsetR = offsetR or 0
-    offsetT = offsetT or 0
-    offsetB = offsetB or 0
-    
-    -- Create container frame for our textures
     local bg = CreateFrame("Frame", nil, frame)
     bg:SetFrameLevel(math.max(0, frame:GetFrameLevel() - 1))
     bg:SetAllPoints(frame)
     
+    -- Solid dark background (covers everything)
+    local solid = bg:CreateTexture(nil, "BACKGROUND", nil, -8)
+    solid:SetTexture("Interface\\Buttons\\WHITE8x8")
+    solid:SetVertexColor(0.06, 0.06, 0.08, 1)
+    solid:SetAllPoints(bg)
+    bg.solid = solid
+    
     -- Top-left corner (256x256)
-    local tl = bg:CreateTexture(nil, "BACKGROUND")
+    local tl = bg:CreateTexture(nil, "BACKGROUND", nil, -7)
     tl:SetTexture(TEX_TOP_LEFT)
     tl:SetSize(256, 256)
-    tl:SetPoint("TOPLEFT", frame, "TOPLEFT", offsetL, offsetT)
+    tl:SetPoint("TOPLEFT", bg, "TOPLEFT", 0, 0)
     
     -- Top-right corner (128x256)
-    local tr = bg:CreateTexture(nil, "BACKGROUND")
+    local tr = bg:CreateTexture(nil, "BACKGROUND", nil, -7)
     tr:SetTexture(TEX_TOP_RIGHT)
     tr:SetSize(128, 256)
-    tr:SetPoint("TOPRIGHT", frame, "TOPRIGHT", offsetR, offsetT)
+    tr:SetPoint("TOPRIGHT", bg, "TOPRIGHT", 0, 0)
     
     -- Bottom-left corner (256x256)
-    local bl = bg:CreateTexture(nil, "BACKGROUND")
+    local bl = bg:CreateTexture(nil, "BACKGROUND", nil, -7)
     bl:SetTexture(TEX_BOT_LEFT)
     bl:SetSize(256, 256)
-    bl:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", offsetL, offsetB)
+    bl:SetPoint("BOTTOMLEFT", bg, "BOTTOMLEFT", 0, 0)
     
     -- Bottom-right corner (128x256)
-    local br = bg:CreateTexture(nil, "BACKGROUND")
+    local br = bg:CreateTexture(nil, "BACKGROUND", nil, -7)
     br:SetTexture(TEX_BOT_RIGHT)
     br:SetSize(128, 256)
-    br:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", offsetR, offsetB)
+    br:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", 0, 0)
     
     frame.DragonUI_DFBackground = bg
-    frame.DragonUI_DFBackground.tl = tl
-    frame.DragonUI_DFBackground.tr = tr
-    frame.DragonUI_DFBackground.bl = bl
-    frame.DragonUI_DFBackground.br = br
-    
     return bg
 end
 
 -- Create DF-style header decoration
-local function CreateDFHeader(frame, yOffset)
+local function CreateDFHeader(frame)
     if not frame or frame.DragonUI_Header then return end
     
-    yOffset = yOffset or 0
-    
-    -- Left cap
     local left = frame:CreateTexture(nil, "OVERLAY")
     left:SetTexture(TEX_HEADER_LEFT)
     left:SetSize(50, 50)
-    left:SetPoint("TOPLEFT", frame, "TOPLEFT", -10, yOffset + 20)
+    left:SetPoint("TOPLEFT", frame, "TOPLEFT", -15, 22)
     
-    -- Middle sections (stretch across)
     local mid = frame:CreateTexture(nil, "ARTWORK")
     mid:SetTexture(TEX_HEADER)
-    mid:SetSize(frame:GetWidth() - 60, 50)
-    mid:SetPoint("TOP", frame, "TOP", 0, yOffset + 20)
+    mid:SetHeight(50)
+    mid:SetPoint("LEFT", left, "RIGHT", -25, 0)
+    mid:SetPoint("RIGHT", frame, "TOPRIGHT", -25, 0)
     
-    -- Right cap
     local right = frame:CreateTexture(nil, "OVERLAY")
     right:SetTexture(TEX_HEADER_RIGHT)
     right:SetSize(50, 50)
-    right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 10, yOffset + 20)
+    right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 15, 22)
     
     frame.DragonUI_Header = { left = left, mid = mid, right = right }
     return frame.DragonUI_Header
 end
 
--- Close button re-skinning (DF-style)
+-- Close button re-skinning
 local function ReskinCloseButton(button, parent, offX, offY)
     if not button then return end
     button:SetNormalTexture(TEX_CLOSE_NORMAL)
@@ -149,7 +131,7 @@ local function ReskinCloseButton(button, parent, offX, offY)
     end
 end
 
--- Style tabs with semi-transparent look
+-- Style tabs
 local function StyleTabs(baseName, count)
     for i = 1, count do
         local tab = _G[baseName .. i]
@@ -157,17 +139,9 @@ local function StyleTabs(baseName, count)
             local left = _G[baseName .. i .. "Left"]
             local middle = _G[baseName .. i .. "Middle"]
             local right = _G[baseName .. i .. "Right"]
-            local leftDisabled = _G[baseName .. i .. "LeftDisabled"]
-            local middleDisabled = _G[baseName .. i .. "MiddleDisabled"]
-            local rightDisabled = _G[baseName .. i .. "RightDisabled"]
-            
-            -- Fade the tab textures for a cleaner look
             if left then left:SetAlpha(0.6) end
             if middle then middle:SetAlpha(0.6) end
             if right then right:SetAlpha(0.6) end
-            if leftDisabled then leftDisabled:SetAlpha(0.4) end
-            if middleDisabled then middleDisabled:SetAlpha(0.4) end
-            if rightDisabled then rightDisabled:SetAlpha(0.4) end
         end
     end
 end
@@ -180,22 +154,25 @@ local function ApplyCharacterFrameSkin()
     if not frame or frame.DragonUI_Skinned then return end
     frame.DragonUI_Skinned = true
     
-    -- Hide Blizzard's default textures
-    local bgTextures = {
+    -- Hide ALL Blizzard textures by name
+    HideNamedTextures({
         "CharacterFrameTopLeft", "CharacterFrameTopRight",
         "CharacterFrameBottomLeft", "CharacterFrameBottomRight",
         "CharacterFrameTop", "CharacterFrameBottom",
         "CharacterFrameLeft", "CharacterFrameRight",
         "CharacterFrameInset", "CharacterFrameInsetRight",
         "CharacterFrameInsetRightInset",
-    }
-    HideFrameTextures(frame, bgTextures)
+        "CharacterFramePortraitFrame",
+    })
+    
+    -- Hide any remaining textures on the frame
+    HideAllFrameTextures(frame)
     
     -- Apply DF background
-    CreateDFPanelBackground(frame, -5, 5, 10, -5)
+    CreateDFPanelBackground(frame)
     
-    -- Add header decoration
-    CreateDFHeader(frame, 0)
+    -- Add header decoration  
+    CreateDFHeader(frame)
     
     -- Style tabs
     StyleTabs("CharacterFrameTab", 5)
@@ -205,40 +182,7 @@ local function ApplyCharacterFrameSkin()
     for _, name in ipairs(subs) do
         local subFrame = _G[name]
         if subFrame then
-            HideFrameTextures(subFrame)
-        end
-    end
-end
-
--- ============================================================================
--- SPELLBOOK SKIN
--- ============================================================================
-local function ApplySpellbookSkin()
-    local frame = _G.SpellBookFrame
-    if not frame or frame.DragonUI_Skinned then return end
-    frame.DragonUI_Skinned = true
-    
-    -- Hide Blizzard textures
-    local bgTextures = {
-        "SpellBookFrameTopLeft", "SpellBookFrameTopRight",
-        "SpellBookFrameBotLeft", "SpellBookFrameBotRight",
-        "SpellBookPage1", "SpellBookPage2",
-        "SpellBookFrameLeft", "SpellBookFrameRight",
-        "SpellBookFrameTop", "SpellBookFrameBottom",
-    }
-    HideFrameTextures(frame, bgTextures)
-    
-    -- Apply DF background
-    CreateDFPanelBackground(frame, -5, 5, 10, -5)
-    
-    -- Add header
-    CreateDFHeader(frame, 0)
-    
-    -- Style spell buttons - subtle improvements
-    for i = 1, 12 do
-        local subText = _G["SpellButton" .. i .. "SubSpellName"]
-        if subText and subText.SetTextColor then
-            subText:SetTextColor(0.8, 0.8, 0.7, 1)
+            HideAllFrameTextures(subFrame)
         end
     end
 end
@@ -251,28 +195,49 @@ local function ApplyQuestLogSkin()
     if not frame or frame.DragonUI_Skinned then return end
     frame.DragonUI_Skinned = true
     
-    -- Hide all textures - quest log uses unique parchment textures
-    HideFrameTextures(frame)
+    -- Hide ALL textures - quest log has many
+    HideAllFrameTextures(frame)
     
-    -- Also hide specific quest log textures
-    local regions = { frame:GetRegions() }
-    for _, region in ipairs(regions) do
-        if region and region:GetObjectType() == "Texture" then
-            region:Hide()
-            region:SetAlpha(0)
-        end
+    -- Also hide the count frame textures
+    if _G.QuestLogCount then
+        HideAllFrameTextures(_G.QuestLogCount)
     end
     
-    -- Apply DF background (quest log is wider)
-    CreateDFPanelBackground(frame, -5, 5, 10, -5)
+    -- Hide detail frame
+    if _G.QuestLogDetailFrame then
+        HideAllFrameTextures(_G.QuestLogDetailFrame)
+    end
+    
+    -- Apply DF background
+    CreateDFPanelBackground(frame)
     
     -- Header
-    CreateDFHeader(frame, 0)
+    CreateDFHeader(frame)
+end
+
+-- ============================================================================
+-- SPELLBOOK SKIN
+-- ============================================================================
+local function ApplySpellbookSkin()
+    local frame = _G.SpellBookFrame
+    if not frame or frame.DragonUI_Skinned then return end
+    frame.DragonUI_Skinned = true
     
-    -- Hide detail frame textures too
-    if _G.QuestLogDetailFrame then
-        HideFrameTextures(_G.QuestLogDetailFrame)
-    end
+    -- Hide textures by name
+    HideNamedTextures({
+        "SpellBookFrameTopLeft", "SpellBookFrameTopRight",
+        "SpellBookFrameBotLeft", "SpellBookFrameBotRight",
+        "SpellBookPage1", "SpellBookPage2",
+    })
+    
+    -- Hide remaining textures
+    HideAllFrameTextures(frame)
+    
+    -- Apply DF background
+    CreateDFPanelBackground(frame)
+    
+    -- Header
+    CreateDFHeader(frame)
 end
 
 -- ============================================================================
@@ -283,20 +248,20 @@ local function ApplyFriendsSkin()
     if not frame or frame.DragonUI_Skinned then return end
     frame.DragonUI_Skinned = true
     
-    -- Hide Blizzard textures
-    local bgTextures = {
+    -- Hide textures by name
+    HideNamedTextures({
         "FriendsFrameTopLeft", "FriendsFrameTopRight",
         "FriendsFrameBottomLeft", "FriendsFrameBottomRight",
-        "FriendsFrameTop", "FriendsFrameBottom",
-        "FriendsFrameLeft", "FriendsFrameRight",
-    }
-    HideFrameTextures(frame, bgTextures)
+    })
+    
+    -- Hide remaining textures
+    HideAllFrameTextures(frame)
     
     -- Apply DF background
-    CreateDFPanelBackground(frame, -5, 5, 10, -5)
+    CreateDFPanelBackground(frame)
     
     -- Header
-    CreateDFHeader(frame, 0)
+    CreateDFHeader(frame)
     
     -- Style tabs
     StyleTabs("FriendsFrameTab", 5)
@@ -312,55 +277,34 @@ f:SetScript("OnEvent", function()
     local function enabled(key) return skins[key] ~= false end
 
     -- Character Frame
-    if enabled('character') then
-        if _G.CharacterFrame then
-            safeHookScript(_G.CharacterFrame, "OnShow", ApplyCharacterFrameSkin)
-            if _G.CharacterFrame:IsShown() then
-                ApplyCharacterFrameSkin()
-            end
-        end
+    if enabled('character') and _G.CharacterFrame then
+        safeHookScript(_G.CharacterFrame, "OnShow", ApplyCharacterFrameSkin)
     end
 
     -- Spellbook
-    if enabled('spellbook') then
-        if _G.SpellBookFrame then
-            safeHookScript(_G.SpellBookFrame, "OnShow", ApplySpellbookSkin)
-            if _G.SpellBookFrame:IsShown() then
-                ApplySpellbookSkin()
-            end
-        end
+    if enabled('spellbook') and _G.SpellBookFrame then
+        safeHookScript(_G.SpellBookFrame, "OnShow", ApplySpellbookSkin)
     end
 
     -- QuestLog
-    if enabled('questlog') then
-        if _G.QuestLogFrame then
-            safeHookScript(_G.QuestLogFrame, "OnShow", ApplyQuestLogSkin)
-            if _G.QuestLogFrame:IsShown() then
-                ApplyQuestLogSkin()
-            end
-        end
+    if enabled('questlog') and _G.QuestLogFrame then
+        safeHookScript(_G.QuestLogFrame, "OnShow", ApplyQuestLogSkin)
     end
 
     -- Friends / Who / Guild
-    if enabled('friends') then
-        if _G.FriendsFrame then
-            safeHookScript(_G.FriendsFrame, "OnShow", ApplyFriendsSkin)
-            if _G.FriendsFrame:IsShown() then
-                ApplyFriendsSkin()
-            end
-        end
+    if enabled('friends') and _G.FriendsFrame then
+        safeHookScript(_G.FriendsFrame, "OnShow", ApplyFriendsSkin)
     end
 
     -- Close buttons
     if enabled('closebuttons') then
         local closeTargets = {
-            { frame = _G.CharacterFrame, btn = _G.CharacterFrameCloseButton, x = -8, y = 15 },
-            { frame = _G.SpellBookFrame, btn = _G.SpellBookCloseButton, x = -8, y = 15 },
-            { frame = _G.QuestLogFrame, btn = _G.QuestLogFrameCloseButton, x = -8, y = 15 },
-            { frame = _G.FriendsFrame, btn = _G.FriendsFrameCloseButton, x = -8, y = 15 },
-            { frame = _G.TalentFrame, btn = _G.TalentFrameCloseButton, x = -8, y = 15 },
-            { frame = _G.HelpFrame, btn = _G.HelpFrameCloseButton, x = -10, y = -10 },
-            { frame = _G.QuestFrame, btn = _G.QuestFrameCloseButton, x = -8, y = 15 },
+            { frame = _G.CharacterFrame, btn = _G.CharacterFrameCloseButton, x = -3, y = 17 },
+            { frame = _G.SpellBookFrame, btn = _G.SpellBookCloseButton, x = -3, y = 17 },
+            { frame = _G.QuestLogFrame, btn = _G.QuestLogFrameCloseButton, x = -3, y = 17 },
+            { frame = _G.FriendsFrame, btn = _G.FriendsFrameCloseButton, x = -3, y = 17 },
+            { frame = _G.TalentFrame, btn = _G.TalentFrameCloseButton, x = -3, y = 17 },
+            { frame = _G.QuestFrame, btn = _G.QuestFrameCloseButton, x = -3, y = 17 },
         }
         for _, t in ipairs(closeTargets) do
             if t.btn then 
