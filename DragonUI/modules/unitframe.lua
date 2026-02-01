@@ -877,16 +877,14 @@ function unitframe:ApplySettings()
             end
             if not objLocal.anchorParent then
                 objLocal.anchorParent = addon.defaults.profile.unitframe.target.anchorParent
-        end
-        if not objLocal.x then
-            objLocal.x = addon.defaults.profile.unitframe.target.x
-        end
-        if not objLocal.y then
-            objLocal.y = addon.defaults.profile.unitframe.target.y
-        end
+            end
+            if not objLocal.x then
+                objLocal.x = addon.defaults.profile.unitframe.target.x
+            end
+            if not objLocal.y then
+                objLocal.y = addon.defaults.profile.unitframe.target.y
+            end
 
-        -- Skip positioning if mover system has a saved position
-        if not hasMoverPosition('target') then
             if targetConfig.override then
                 TargetFrame:SetMovable(1)
                 TargetFrame:StartMoving()
