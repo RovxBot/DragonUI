@@ -1579,42 +1579,84 @@ local function GetBagBarAnchorPoint()
 	return "BOTTOMRIGHT", UIParent, "BOTTOMLEFT", right, top + 10
 end
 
--- Position container frames above the bag bar
-local function PositionContainerFrames()
+-- ============================================================================
+-- PROPER CONTAINER FRAME ANCHORING
+-- Override Blizzard's UpdateContainerFrameAnchors to position bags BEFORE show
+-- This prevents the "flash across screen" issue
+-- ============================================================================
+
+-- Store original function
+local originalUpdateContainerFrameAnchors = UpdateContainerFrameAnchors
+
+-- Custom container anchoring that positions above bag bar
+function UpdateContainerFrameAnchors()
+	-- Check if we should use custom positioning
 	if not addon.db or not addon.db.profile or not addon.db.profile.bags then
-		return
+		return originalUpdateContainerFrameAnchors()
 	end
 	
 	local bagsConfig = addon.db.profile.bags
 	if not bagsConfig.anchor_to_bagbar then
-		return -- Use default Blizzard positioning
+		return originalUpdateContainerFrameAnchors()
 	end
 	
 	if not _G.pUiBagsBar then
-		return
+		return originalUpdateContainerFrameAnchors()
 	end
 	
+	-- Get bag bar position
 	local bagsBar = _G.pUiBagsBar
 	local scale = bagsBar:GetEffectiveScale()
 	local uiScale = UIParent:GetEffectiveScale()
 	
-	-- Calculate position above bag bar
 	local right = (bagsBar:GetRight() or 0) * scale / uiScale
 	local top = (bagsBar:GetTop() or 0) * scale / uiScale
 	
-	-- Track total height for stacking
-	local currentY = top + 10
-	local padding = 5
+	-- Constants for layout
+	local CONTAINER_WIDTH = 192  -- Standard bag width
+	local CONTAINER_SPACING = 0
+	local VISIBLE_CONTAINER_SPACING = 3
+	local CONTAINER_OFFSET_Y = 70  -- Vertical offset per row
 	
-	-- Position each open container frame
+	-- Screen bounds
+	local screenHeight = UIParent:GetTop() or 768
+	
+	-- Track current position
+	local xOffset = 0
+	local yOffset = 0
+	local columnsThisRow = 0
+	local maxColumnsPerRow = 2  -- Stack 2 bags horizontally before going up
+	
+	-- Position each container frame
 	for i = 1, NUM_CONTAINER_FRAMES or 13 do
 		local containerFrame = _G["ContainerFrame" .. i]
 		if containerFrame and containerFrame:IsShown() then
+			-- Calculate position
 			containerFrame:ClearAllPoints()
-			containerFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", right, currentY)
-			currentY = currentY + containerFrame:GetHeight() + padding
+			
+			-- Position from bottom-right of bag bar, going left then up
+			local x = right - xOffset - containerFrame:GetWidth()
+			local y = top + 10 + yOffset
+			
+			containerFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
+			
+			-- Move to next column
+			xOffset = xOffset + containerFrame:GetWidth() + VISIBLE_CONTAINER_SPACING
+			columnsThisRow = columnsThisRow + 1
+			
+			-- Start new row if needed
+			if columnsThisRow >= maxColumnsPerRow then
+				xOffset = 0
+				yOffset = yOffset + CONTAINER_OFFSET_Y + containerFrame:GetHeight()
+				columnsThisRow = 0
+			end
 		end
 	end
+end
+
+-- Legacy function kept for compatibility
+local function PositionContainerFrames()
+	UpdateContainerFrameAnchors()
 end
 
 -- Create the combined bag frame
@@ -1845,40 +1887,10 @@ function addon.ToggleCombinedBags()
 	end
 end
 
--- Hook into bag opening to redirect to combined view or reposition
-local function OnBagOpen(bagID)
-	if not addon.db or not addon.db.profile or not addon.db.profile.bags then
-		return
-	end
-	
-	local bagsConfig = addon.db.profile.bags
-	
-	if bagsConfig.combine_bags then
-		-- Close individual bag and show combined
-		for i = 1, NUM_CONTAINER_FRAMES or 13 do
-			local containerFrame = _G["ContainerFrame" .. i]
-			if containerFrame and containerFrame:IsShown() then
-				containerFrame:Hide()
-			end
-		end
-		
-		local frame = CreateCombinedBagFrame()
-		frame:Show()
-		UpdateCombinedBagFrame()
-	elseif bagsConfig.anchor_to_bagbar then
-		-- Reposition after a short delay to let Blizzard finish
-		DelayedCall(0.05, PositionContainerFrames)
-	end
-end
-
 -- Hook into bag updates
 local function OnBagUpdate()
 	if CombinedBagFrame and CombinedBagFrame:IsShown() then
 		UpdateCombinedBagFrame()
-	end
-	
-	if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
-		PositionContainerFrames()
 	end
 end
 
@@ -1889,9 +1901,6 @@ function ToggleBag(bagID)
 		addon.ToggleCombinedBags()
 	else
 		originalToggleBag(bagID)
-		if addon.db.profile.bags.anchor_to_bagbar then
-			DelayedCall(0.05, PositionContainerFrames)
-		end
 	end
 end
 
@@ -1902,9 +1911,6 @@ function ToggleAllBags()
 		addon.ToggleCombinedBags()
 	else
 		originalToggleAllBags()
-		if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
-			DelayedCall(0.05, PositionContainerFrames)
-		end
 	end
 end
 
@@ -1917,9 +1923,6 @@ function OpenAllBags()
 		UpdateCombinedBagFrame()
 	else
 		originalOpenAllBags()
-		if addon.db and addon.db.profile and addon.db.profile.bags and addon.db.profile.bags.anchor_to_bagbar then
-			DelayedCall(0.05, PositionContainerFrames)
-		end
 	end
 end
 
@@ -1932,7 +1935,7 @@ function CloseAllBags()
 	originalCloseAllBags()
 end
 
--- Hook container frame show events for repositioning
+-- Hook container frame show events for combined bag mode only
 for i = 1, NUM_CONTAINER_FRAMES or 13 do
 	local containerFrame = _G["ContainerFrame" .. i]
 	if containerFrame then
@@ -1943,9 +1946,8 @@ for i = 1, NUM_CONTAINER_FRAMES or 13 do
 					local frame = CreateCombinedBagFrame()
 					frame:Show()
 					UpdateCombinedBagFrame()
-				elseif addon.db.profile.bags.anchor_to_bagbar then
-					DelayedCall(0.05, PositionContainerFrames)
 				end
+				-- No delayed repositioning needed - UpdateContainerFrameAnchors handles it
 			end
 		end)
 	end
