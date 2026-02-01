@@ -1917,56 +1917,13 @@ function CloseAllBags()
 	originalCloseAllBags()
 end
 
--- Function to position a single container frame above bag bar
-local function PositionSingleContainer(containerFrame)
-	if not containerFrame or not containerFrame:IsShown() then return end
-	if not addon.db or not addon.db.profile or not addon.db.profile.bags then return end
-	if not addon.db.profile.bags.anchor_to_bagbar then return end
-	if not _G.pUiBagsBar then return end
-	
-	-- Count visible bags and this bag's index
-	local visibleIndex = 0
-	local frameName = containerFrame:GetName()
-	local frameNum = frameName and tonumber(frameName:match("ContainerFrame(%d+)"))
-	
-	for i = 1, NUM_CONTAINER_FRAMES or 13 do
-		local cf = _G["ContainerFrame" .. i]
-		if cf and cf:IsShown() then
-			visibleIndex = visibleIndex + 1
-			if i == frameNum then
-				break
-			end
-		end
-	end
-	
-	-- Get bag bar position
-	local bagsBar = _G.pUiBagsBar
-	local scale = bagsBar:GetEffectiveScale()
-	local uiScale = UIParent:GetEffectiveScale()
-	
-	local right = (bagsBar:GetRight() or 0) * scale / uiScale
-	local top = (bagsBar:GetTop() or 0) * scale / uiScale
-	
-	-- Calculate position based on visible index (0-based for math)
-	local index = visibleIndex - 1
-	local col = index % 2  -- 0 or 1 (2 columns)
-	local row = math.floor(index / 2)
-	
-	local CONTAINER_WIDTH = containerFrame:GetWidth() or 192
-	local CONTAINER_HEIGHT = containerFrame:GetHeight() or 70
-	local SPACING_X = 5
-	local SPACING_Y = 10
-	
-	-- Position from top-right of bag bar, going left then up
-	local x = right - (col * (CONTAINER_WIDTH + SPACING_X)) - CONTAINER_WIDTH
-	local y = top + 10 + (row * (CONTAINER_HEIGHT + SPACING_Y))
-	
-	containerFrame:ClearAllPoints()
-	containerFrame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x, y)
-end
+-- Debounce timer for bag repositioning
+local bagRepositionPending = false
 
 -- Reposition all visible container frames
 local function RepositionAllContainers()
+	bagRepositionPending = false
+	
 	if not addon.db or not addon.db.profile or not addon.db.profile.bags then return end
 	if not addon.db.profile.bags.anchor_to_bagbar then return end
 	if not _G.pUiBagsBar then return end
@@ -2003,6 +1960,13 @@ local function RepositionAllContainers()
 	end
 end
 
+-- Schedule a single repositioning (debounced)
+local function ScheduleBagReposition()
+	if bagRepositionPending then return end
+	bagRepositionPending = true
+	DelayedCall(0.05, RepositionAllContainers)
+end
+
 -- Hook container frame show events
 for i = 1, NUM_CONTAINER_FRAMES or 13 do
 	local containerFrame = _G["ContainerFrame" .. i]
@@ -2015,8 +1979,13 @@ for i = 1, NUM_CONTAINER_FRAMES or 13 do
 					frame:Show()
 					UpdateCombinedBagFrame()
 				elseif addon.db.profile.bags.anchor_to_bagbar then
-					-- Reposition all visible containers when any one opens
-					DelayedCall(0.01, RepositionAllContainers)
+					-- Hide immediately, will be shown after repositioning
+					containerFrame:SetAlpha(0)
+					ScheduleBagReposition()
+					-- Show after reposition completes
+					DelayedCall(0.06, function()
+						containerFrame:SetAlpha(1)
+					end)
 				end
 			end
 		end)
