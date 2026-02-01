@@ -284,11 +284,8 @@ function MainMenuBarMixin:actionbar_setup()
 	ActionButton1:SetParent(pUiMainBar)
 	ActionButton1:SetClearPoint('BOTTOMLEFT', pUiMainBar, 2, 2)
 
-	-- Position secondary bars - these will be updated by RefreshUpperActionBarsPosition later
-	-- For now, position them with default offsets
-	if MultiBarBottomLeftButton1 then
-		MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, 48)
-	end
+	-- Note: Secondary bar positioning is handled by PositionActionBars() and RefreshUpperActionBarsPosition()
+	-- Do NOT position MultiBarBottomLeftButton1 here - it will be positioned by ArrangeActionBarButtons
 
 	if config.buttons.pages.show then
 		do_action.SetNumPagesButton(ActionBarUpButton, pUiMainBarArt, 'pageuparrow', 8)
@@ -318,7 +315,7 @@ function MainMenuBarMixin:actionbar_setup()
 		MultiBarBottomRight:SetParent(UIParent)
 	end
 	MultiBarBottomRight:EnableMouse(false)
-	MultiBarBottomRight:SetClearPoint('BOTTOMLEFT', MultiBarBottomLeftButton1, 'TOPLEFT', 0, 8)
+	-- Note: MultiBarBottomRight positioning is handled by RefreshUpperActionBarsPosition()
 	-- MultiBarRight:SetClearPoint('TOPRIGHT', UIParent, 'RIGHT', -6, (Minimap:GetHeight() * 1.3))
 	MultiBarRight:SetScale(config.mainbars.scale_rightbar)
 	MultiBarLeft:SetScale(config.mainbars.scale_leftbar)
@@ -597,18 +594,21 @@ function addon.RefreshRepBarPosition()
 	end
 end
 
--- update position for secondary action bars
+-- update position for secondary action bars (bottom left and bottom right)
+-- This positions the BAR FRAMES, not individual buttons - buttons are arranged by ArrangeActionBarButtons
 function addon.RefreshUpperActionBarsPosition()
     if InCombatLockdown() then return end
 
     local db = addon.db and addon.db.profile and addon.db.profile.mainbars
     if not db or not db.player then
         -- Fallback to original positioning if no config
-        if MultiBarBottomLeftButton1 then
-            MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, 48)
+        if MultiBarBottomLeft and not db.bottom_left.override then
+            MultiBarBottomLeft:ClearAllPoints()
+            MultiBarBottomLeft:SetPoint('BOTTOMLEFT', pUiMainBar, 'TOPLEFT', 0, 8)
         end
-        if MultiBarBottomRight then
-            MultiBarBottomRight:SetClearPoint('BOTTOMLEFT', MultiBarBottomLeftButton1, 'TOPLEFT', 0, 8)
+        if MultiBarBottomRight and not db.bottom_right.override then
+            MultiBarBottomRight:ClearAllPoints()
+            MultiBarBottomRight:SetPoint('BOTTOMLEFT', MultiBarBottomLeft, 'TOPLEFT', 0, 8)
         end
         return
     end
@@ -619,25 +619,31 @@ function addon.RefreshUpperActionBarsPosition()
     local spacing = 7
     local mainBarHeight = (buttonSize * mainBarRows) + (spacing * (mainBarRows - 1))
 
+    -- Calculate bottom left bar height for positioning bottom right bar
+    local bottomLeftRows = db.bottom_left and db.bottom_left.rows or 1
+    local bottomLeftHeight = (buttonSize * bottomLeftRows) + (spacing * (bottomLeftRows - 1))
+
     -- calculate offset based on background visibility and main bar height
     local yOffset1, yOffset2
     if addon.db and addon.db.profile.buttons and addon.db.profile.buttons.hide_main_bar_background then
         -- values when background is hidden
         yOffset1 = mainBarHeight + 8  -- Position above main bar
-        yOffset2 = 8
+        yOffset2 = bottomLeftHeight + 8
     else
         -- default values when background is visible
         yOffset1 = mainBarHeight + 11  -- Position above main bar with background
-        yOffset2 = 8
+        yOffset2 = bottomLeftHeight + 8
     end
 
-    -- reposition the bars only if they exist and are not manually positioned
-    if MultiBarBottomLeftButton1 and not (db.bottom_left and db.bottom_left.override) then
-        MultiBarBottomLeftButton1:SetClearPoint('BOTTOMLEFT', ActionButton1, 'BOTTOMLEFT', 0, yOffset1)
+    -- Reposition the BAR FRAMES (not button 1) - only if not manually positioned
+    if MultiBarBottomLeft and not (db.bottom_left and db.bottom_left.override) then
+        MultiBarBottomLeft:ClearAllPoints()
+        MultiBarBottomLeft:SetPoint('BOTTOMLEFT', pUiMainBar, 'BOTTOMLEFT', 0, yOffset1)
     end
 
-    if MultiBarBottomRight and MultiBarBottomLeftButton1 and not (db.bottom_right and db.bottom_right.override) then
-        MultiBarBottomRight:SetClearPoint('BOTTOMLEFT', MultiBarBottomLeftButton1, 'TOPLEFT', 0, yOffset2)
+    if MultiBarBottomRight and not (db.bottom_right and db.bottom_right.override) then
+        MultiBarBottomRight:ClearAllPoints()
+        MultiBarBottomRight:SetPoint('BOTTOMLEFT', MultiBarBottomLeft, 'BOTTOMLEFT', 0, yOffset2)
     end
 end
 
