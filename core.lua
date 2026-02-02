@@ -505,53 +505,24 @@ function addon:RegisterEditableFrame(frameInfo)
     
     self.EditableFrames[frameInfo.name] = frameData
 
+    -- Bridge to new mover system for centralized positioning
+    if addon.MoverSystem then
+        addon.MoverSystem:RegisterFromEditableFrame(frameInfo)
+    end
 end
 
 --  FUNCIÓN PARA MOSTRAR TODOS LOS FRAMES EN EDITOR MODE
 function addon:ShowAllEditableFrames()
-    for name, frameData in pairs(self.EditableFrames) do
-        if frameData.frame then
-            HideUIFrame(frameData.frame) -- Mostrar overlay verde
-            
-            --  NUEVO: Mostrar frame con datos fake si es necesario
-            if frameData.showTest then
-                frameData.showTest()
-            end
-            
-            if frameData.onShow then
-                frameData.onShow()
-            end
-        end
+    if addon.MoverSystem then
+        addon.MoverSystem:ShowAll()
     end
-    print("|cFF00FF00[DragonUI]|r All editable frames shown for editing")
 end
 
 --  FUNCIÓN PARA OCULTAR TODOS LOS FRAMES Y GUARDAR POSICIONES
 function addon:HideAllEditableFrames(refresh)
-    for name, frameData in pairs(self.EditableFrames) do
-        if frameData.frame then
-            ShowUIFrame(frameData.frame) -- Ocultar overlay verde
-            
-            --  NUEVO: Ocultar frame fake si no debe estar visible
-            if frameData.hideTest then
-                frameData.hideTest()
-            end
-            
-            if refresh then
-                -- Guardar posición automáticamente
-                if #frameData.configPath == 2 then
-                    SaveUIFramePosition(frameData.frame, frameData.configPath[1], frameData.configPath[2])
-                else
-                    SaveUIFramePosition(frameData.frame, frameData.configPath[1])
-                end
-                
-                if frameData.onHide then
-                    frameData.onHide()
-                end
-            end
-        end
+    if addon.MoverSystem then
+        addon.MoverSystem:HideAll(refresh)
     end
-    print("|cFF00FF00[DragonUI]|r All editable frames hidden, positions saved")
 end
 
 --  FUNCIÓN PARA VERIFICAR SI UN FRAME DEBE ESTAR VISIBLE

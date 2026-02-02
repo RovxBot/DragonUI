@@ -6,6 +6,7 @@
 	<Script file="events.lua"/>
 	<Script file="formatting.lua"/>
 	<Script file="nineslice.lua"/>
+	<Script file="mover.lua"/>
 
 <!--
 *******************************************************************************

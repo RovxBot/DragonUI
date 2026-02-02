@@ -359,6 +359,11 @@ function EditorMode:ResetAllPositions()
         end
         addon.db.profile.additional.totem = addon:CopyTable(addon.defaults.profile.additional.totem)
     end
+
+    -- Reset movers registered in the new system
+    if addon.MoverSystem then
+        addon.MoverSystem:ResetAll()
+    end
     
     -- Usar ReloadUI para aplicar completamente los cambios
     ReloadUI()
