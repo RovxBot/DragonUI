@@ -12,6 +12,8 @@ local inspectorFrame = nil;
 local activeMover = nil;
 local inspectorLinkedLayoutKey = nil; -- for action bars orientation/scale
 local activeHighlight = nil;
+local keyCatcher = nil;
+local savedPresets = {}; -- session presets per mover
 
 -- StaticPopup para reiniciar UI después de salir del modo editor
 StaticPopupDialogs["DRAGONUI_RELOAD_UI"] = {
@@ -125,7 +127,7 @@ local function ensureInspectorFrame()
     if inspectorFrame then return inspectorFrame end
 
     local f = CreateFrame("Frame", "DragonUIInspectorFrame", UIParent, "BackdropTemplate")
-    f:SetSize(260, 230)
+    f:SetSize(260, 250)
     f:SetPoint("CENTER", UIParent, "CENTER", 320, 120)
     f:SetFrameStrata("DIALOG")
     f:SetFrameLevel(120)
@@ -136,11 +138,12 @@ local function ensureInspectorFrame()
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
 
     f:SetBackdrop({
-        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
         edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true, tileSize = 32, edgeSize = 16,
-        insets = { left = 3, right = 3, top = 5, bottom = 3 }
+        tile = true, tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
     })
+    f:SetBackdropColor(0.05, 0.07, 0.1, 0.92)
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     title:SetPoint("TOP", 0, -8)
@@ -169,7 +172,11 @@ local function ensureInspectorFrame()
     local orientationDrop = CreateFrame("Frame", "DragonUIInspectorOrientationDrop", f, "UIDropDownMenuTemplate")
     orientationDrop:SetPoint("TOPLEFT", orientationLabel, "BOTTOMLEFT", -14, -2)
 
-    local xLabel = makeLabel("X", -168)
+    local anchorParentPointLabel = makeLabel("Parent Point", -118)
+    local parentPointDrop = CreateFrame("Frame", "DragonUIInspectorParentPointDrop", f, "UIDropDownMenuTemplate")
+    parentPointDrop:SetPoint("TOPLEFT", anchorParentPointLabel, "BOTTOMLEFT", -14, -2)
+
+    local xLabel = makeLabel("X", -208)
     local xSlider = CreateFrame("Slider", "DragonUIInspectorX", f, "OptionsSliderTemplate")
     xSlider:SetPoint("TOPLEFT", xLabel, "BOTTOMLEFT", 0, -6)
     xSlider:SetWidth(180)
@@ -178,7 +185,7 @@ local function ensureInspectorFrame()
     _G[xSlider:GetName() .. "Low"]:SetText("-1000")
     _G[xSlider:GetName() .. "High"]:SetText("1000")
 
-    local yLabel = makeLabel("Y", -218)
+    local yLabel = makeLabel("Y", -258)
     local ySlider = CreateFrame("Slider", "DragonUIInspectorY", f, "OptionsSliderTemplate")
     ySlider:SetPoint("TOPLEFT", yLabel, "BOTTOMLEFT", 0, -6)
     ySlider:SetWidth(180)
@@ -190,23 +197,36 @@ local function ensureInspectorFrame()
     scaleSlider:SetPoint("TOPLEFT", ySlider, "BOTTOMLEFT", 0, -20)
 
     local resetBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    resetBtn:SetSize(80, 20)
+    resetBtn:SetSize(70, 20)
     resetBtn:SetPoint("BOTTOMLEFT", 12, 10)
     resetBtn:SetText("Reset")
 
+    local revertBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    revertBtn:SetSize(70, 20)
+    revertBtn:SetPoint("LEFT", resetBtn, "RIGHT", 6, 0)
+    revertBtn:SetText("Revert")
+
+    local saveBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    saveBtn:SetSize(70, 20)
+    saveBtn:SetPoint("LEFT", revertBtn, "RIGHT", 6, 0)
+    saveBtn:SetText("Save")
+
     local closeBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
-    closeBtn:SetSize(80, 20)
-    closeBtn:SetPoint("BOTTOMRIGHT", -12, 10)
+    closeBtn:SetSize(70, 20)
+    closeBtn:SetPoint("LEFT", saveBtn, "RIGHT", 6, 0)
     closeBtn:SetText("Close")
     closeBtn:SetScript("OnClick", function() f:Hide() end)
 
     f.anchorDrop = anchorDrop
     f.parentBox = parentBox
     f.orientationDrop = orientationDrop
+    f.parentPointDrop = parentPointDrop
     f.xSlider = xSlider
     f.ySlider = ySlider
     f.scaleSlider = scaleSlider
     f.resetBtn = resetBtn
+    f.revertBtn = revertBtn
+    f.saveBtn = saveBtn
     f.anchorLabel = anchorLabel
 
     inspectorFrame = f
@@ -224,6 +244,8 @@ local function refreshInspector(entryName, entry)
     inspectorFrame.xSlider:SetValue(pos.x or 0)
     inspectorFrame.ySlider:SetValue(pos.y or 0)
     inspectorFrame.scaleSlider:SetValue(pos.scale or 1)
+    UIDropDownMenu_SetSelectedValue(inspectorFrame.parentPointDrop, pos.anchorParentPoint or pos.anchor or "CENTER")
+    UIDropDownMenu_SetText(inspectorFrame.parentPointDrop, pos.anchorParentPoint or pos.anchor or "CENTER")
 
     -- Orientation dropdown only meaningful for action bars
     if inspectorLinkedLayoutKey and addon.db and addon.db.profile and addon.db.profile.mainbars and addon.db.profile.mainbars.layout then
@@ -260,6 +282,34 @@ local function initAnchorDropdown(frame)
                     if entry then
                         local pos = getCurrentPosition(entry)
                         pos.anchor = v
+                        applyPosition(name, entry, pos)
+                        refreshInspector(name, entry)
+                    end
+                end
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+end
+
+local function initParentPointDropdown(frame)
+    frame.label = frame.label or frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.label:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 16, 2)
+    frame.label:SetText("Anchor Parent Point")
+
+    UIDropDownMenu_Initialize(frame, function(self, level)
+        for _, v in ipairs({"CENTER","TOP","BOTTOM","LEFT","RIGHT","TOPLEFT","TOPRIGHT","BOTTOMLEFT","BOTTOMRIGHT"}) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = v
+            info.value = v
+            info.func = function()
+                UIDropDownMenu_SetSelectedValue(frame, v)
+                UIDropDownMenu_SetText(frame, v)
+                if activeMover then
+                    local name, entry = findMoverEntryByFrame(activeMover)
+                    if entry then
+                        local pos = getCurrentPosition(entry)
+                        pos.anchorParentPoint = v
                         applyPosition(name, entry, pos)
                         refreshInspector(name, entry)
                     end
@@ -307,6 +357,7 @@ end
 local function wireInspectorHandlers()
     if not inspectorFrame then return end
     initAnchorDropdown(inspectorFrame.anchorDrop)
+    initParentPointDropdown(inspectorFrame.parentPointDrop)
     initOrientationDropdown(inspectorFrame.orientationDrop)
 
     inspectorFrame.parentBox:SetScript("OnEnterPressed", function(self)
@@ -362,6 +413,24 @@ local function wireInspectorHandlers()
             })
             refreshInspector(name, entry)
         end
+    end)
+
+    inspectorFrame.revertBtn:SetScript("OnClick", function()
+        if not activeMover then return end
+        local name, entry = findMoverEntryByFrame(activeMover)
+        if not entry then return end
+        local preset = savedPresets[name]
+        if preset then
+            applyPosition(name, entry, preset)
+            refreshInspector(name, entry)
+        end
+    end)
+
+    inspectorFrame.saveBtn:SetScript("OnClick", function()
+        if not activeMover then return end
+        local name, entry = findMoverEntryByFrame(activeMover)
+        if not entry then return end
+        savedPresets[name] = getCurrentPosition(entry)
     end)
 end
 
@@ -546,6 +615,34 @@ function EditorMode:Show()
         activeHighlight:Hide()
     end
 
+    if not keyCatcher then
+        keyCatcher = CreateFrame("Frame", "DragonUIEditKeyCatcher", UIParent)
+        keyCatcher:SetAllPoints(UIParent)
+        keyCatcher:EnableKeyboard(true)
+        keyCatcher:SetFrameStrata("FULLSCREEN_DIALOG")
+        keyCatcher:SetFrameLevel(201)
+        keyCatcher:SetPropagateKeyboardInput(false)
+        keyCatcher:SetScript("OnKeyDown", function(_, key)
+            if not activeMover or InCombatLockdown() then return end
+            local step = (addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.gridSize) or 32
+            local deltaX, deltaY = 0, 0
+            if key == "UP" or key == "W" then deltaY = step
+            elseif key == "DOWN" or key == "S" then deltaY = -step
+            elseif key == "LEFT" or key == "A" then deltaX = -step
+            elseif key == "RIGHT" or key == "D" then deltaX = step
+            else return end
+
+            local name, entry = findMoverEntryByFrame(activeMover)
+            if not entry then return end
+            local pos = getCurrentPosition(entry)
+            pos.x = (pos.x or 0) + deltaX
+            pos.y = (pos.y or 0) + deltaY
+            applyPosition(name, entry, pos)
+            refreshInspector(name, entry)
+        end)
+    end
+    keyCatcher:Show()
+
     --  NUEVO: USAR SISTEMA CENTRALIZADO - UNA SOLA LÍNEA
     addon:ShowAllEditableFrames()
     
@@ -575,6 +672,7 @@ function EditorMode:Hide(showReloadPopup)
     if resetAllButton then resetAllButton:Hide() end
     if inspectorFrame then inspectorFrame:Hide() end
     if activeHighlight then activeHighlight:Hide() end
+    if keyCatcher then keyCatcher:Hide() end
     activeMover = nil
 
     --  NUEVO: USAR SISTEMA CENTRALIZADO - UNA SOLA LÍNEA
