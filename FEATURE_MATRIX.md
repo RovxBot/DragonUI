@@ -6,7 +6,7 @@ Legend: ✅ Present, ⚠️ Partial/backported, ⭕ Missing, ➜ Action item.
 
 | Feature / Area | DragonUI status | Reference module(s) | Notes / Next step |
 | --- | --- | --- | --- |
-| Action bars & paging | ⚠️ mainbars.lua, buttons.lua, cooldowns.lua | Actionbar, Flyout | Needs retail-style flyouts, hover/press states, improved paging + vehicle swap; port Flyout visuals/logic. |
+| Action bars & paging | ⚠️ mainbars.lua, buttons.lua, cooldowns.lua | Actionbar, Flyout | Layout controls (rows/cols/spacing/alpha, orientation, mouseover/combat hide) and live snap are in; still need retail-style flyouts, hover/press states, paging map UI, vehicle swap polish. |
 | Quick keybind | ⚠️ keybinding.lua | Actionbar (QuickKeybind) | Core works; add conflict feedback, stance/vehicle/flyout coverage, on-screen hints. |
 | Micro menu & bags | ⚠️ micromenu.lua | UI (Micromenu/Bags) | Visuals close but lacks retail bag skin/animations; add bag search/highlight and faction/PvP badge polish. |
 | Minimap | ✅ minimap.lua | Minimap | Present; align mask/art with reference, add calendar/mail indicators and hover tooltips matching DF skin. |
@@ -18,7 +18,7 @@ Legend: ✅ Present, ⚠️ Partial/backported, ⭕ Missing, ➜ Action item.
 | Chat skin | ⭕ | Chat | No chat module; port styling (tabs, editbox, URL copy), keep optional toggle. |
 | Dark mode theme | ⭕ | Darkmode | Add global color set and toggles; gate assets for low memory. |
 | Utility tools | ⭕ | Utility | Missing conveniences (durability/repair, friends/queue widgets); pick subset suitable for 3.3.5a. |
-| Edit Mode / movers | ⚠️ editor_mode.lua | UI (Editmode) | Drag handles exist; add per-frame movers, snap lines, per-profile layouts matching reference UX. |
+| Edit Mode / movers | ⚠️ editor_mode.lua | UI (Editmode) | Grid toggle/size + snap, live XY readout, hover nudge buttons, inspector (anchor/parent/X/Y/scale/orientation), active highlight done; still missing presets/revert, keyboard nudging, focus ring styling, nine-slice + fade, anchor-parent-point helper. |
 | Quest tracker | ✅ questtracker.lua | Utility (Quest tweaks) | Present; revisit for DF styling and module toggles. |
 | Vehicle & stance | ⚠️ vehicle.lua, stance.lua, multicast.lua | Actionbar/Compatibility | Functioning but buggy per README; mirror reference handling and test DK/vehicles/pet classes. |
 | Compatibility layer | ⚠️ compatibility.lua | Compatibility | Basic; port shims/version checks, add VIP/Version logic for updates. |
