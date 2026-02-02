@@ -329,13 +329,64 @@ function CreateUIFrame(width, height, frameName)
         
     end
 
-    --  TEXTO COMO RETAILUI
+    --  ENCABEZADO CON TEXTO Y NUDGE BUTTONS
     do
-        local fontString = frame:CreateFontString(nil, "BORDER", 'GameFontNormal')
-        fontString:SetAllPoints(frame)
-        fontString:SetText(frameName)
-        fontString:Hide()
-        frame.editorText = fontString
+        local header = CreateFrame("Frame", nil, frame)
+        header:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+        header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 2, 2)
+        header:SetHeight(18)
+        header:Hide()
+        frame.editorHeader = header
+
+        local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        title:SetPoint("LEFT", header, "LEFT", 2, 0)
+        title:SetText(frameName)
+        frame.editorText = title
+
+        local function nudge(dx, dy)
+            if InCombatLockdown() then return end
+            local point, relativeTo, relativePoint, x, y = frame:GetPoint(1)
+            local step = (addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.gridSize) or 32
+            x = (x or 0) + dx * step
+            y = (y or 0) + dy * step
+            frame:ClearAllPoints()
+            frame:SetPoint(point or "CENTER", relativeTo or UIParent, relativePoint or point or "CENTER", x, y)
+            -- Save immediately so config stays in sync
+            for n, frameData in pairs(addon.EditableFrames) do
+                if frameData.frame == frame then
+                    if #frameData.configPath == 2 then
+                        SaveUIFramePosition(frameData.frame, frameData.configPath[1], frameData.configPath[2])
+                    else
+                        SaveUIFramePosition(frameData.frame, frameData.configPath[1])
+                    end
+                    break
+                end
+            end
+        end
+
+        local function makeBtn(label, anchor, dx, dy)
+            local btn = CreateFrame("Button", nil, header, "UIPanelButtonTemplate")
+            btn:SetSize(18, 18)
+            btn:SetText(label)
+            btn:SetPoint("RIGHT", anchor, "LEFT", -2, 0)
+            btn:SetScript("OnClick", function() nudge(dx, dy) end)
+            btn:Hide()
+            return btn
+        end
+
+        -- Create buttons ordered Right to Left: ↑ ↓ ← →
+        local rightBtn = CreateFrame("Button", nil, header, "UIPanelButtonTemplate")
+        rightBtn:SetSize(18, 18)
+        rightBtn:SetText("→")
+        rightBtn:SetPoint("RIGHT", header, "RIGHT", -2, 0)
+        rightBtn:SetScript("OnClick", function() nudge(1, 0) end)
+        rightBtn:Hide()
+
+        local leftBtn = makeBtn("←", rightBtn, -1, 0)
+        local downBtn = makeBtn("↓", leftBtn, 0, -1)
+        local upBtn = makeBtn("↑", downBtn, 0, 1)
+
+        header.nudgeButtons = {upBtn, downBtn, leftBtn, rightBtn}
     end
 
     return frame
@@ -354,6 +405,10 @@ function ShowUIFrame(frame)
     end
     if frame.editorText then
         frame.editorText:Hide()
+    end
+    if frame.editorHeader and frame.editorHeader.nudgeButtons then
+        frame.editorHeader:Hide()
+        for _, b in ipairs(frame.editorHeader.nudgeButtons) do b:Hide() end
     end
 
     if addon.frames[frame] then
@@ -374,6 +429,10 @@ function HideUIFrame(frame, exclude)
     end
     if frame.editorText then
         frame.editorText:Show()
+    end
+    if frame.editorHeader and frame.editorHeader.nudgeButtons then
+        frame.editorHeader:Show()
+        for _, b in ipairs(frame.editorHeader.nudgeButtons) do b:Show() end
     end
 
     addon.frames[frame] = {}

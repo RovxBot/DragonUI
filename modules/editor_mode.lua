@@ -146,7 +146,7 @@ local function createGridOverlay()
     --  AÑADIR CAPA DE FONDO OSCURA SEMI-TRANSPARENTE
     local background = gridOverlay:CreateTexture("DragonUIGridBackground", 'BACKGROUND')
     background:SetAllPoints(gridOverlay)
-    background:SetTexture(0, 0, 0, 0.3)  -- Negro semi-transparente
+    background:SetTexture(0.05, 0.1, 0.18, 0.35)  -- Azul grisáceo suave
     background:SetDrawLayer('BACKGROUND', -1)  -- Detrás de todo
 
     local lineThickness = 1
@@ -157,9 +157,9 @@ local function createGridOverlay()
         
         -- La línea central es exactamente en halfCellsHorizontal
         if i == halfCellsHorizontal then
-            line:SetTexture(1, 0, 0, 0.8)  -- Línea central roja EXACTA
+            line:SetTexture(0.8, 0.2, 0.9, 0.9)  -- Línea central magenta
         else
-            line:SetTexture(1, 1, 1, 0.3)  -- Líneas blancas simétricas
+            line:SetTexture(0.6, 0.8, 1, 0.25)  -- Líneas azul claro
         end
         
         local x = i * actualCellWidth
@@ -173,9 +173,9 @@ local function createGridOverlay()
         
         -- La línea central es exactamente en halfCellsVertical
         if i == halfCellsVertical then
-            line:SetTexture(1, 0, 0, 0.8)  -- Línea central roja EXACTA
+            line:SetTexture(0.8, 0.2, 0.9, 0.9)  -- Línea central magenta
         else
-            line:SetTexture(1, 1, 1, 0.3)  -- Líneas blancas simétricas
+            line:SetTexture(0.6, 0.8, 1, 0.25)  -- Líneas azul claro
         end
         
         local y = i * actualCellHeight
@@ -230,7 +230,7 @@ function EditorMode:Show()
     createGridOverlay()
     createExitButton()
     createResetAllButton()
-    gridOverlay:Show()
+    self:UpdateGridVisibility()
     exitEditorButton:Show()
     resetAllButton:Show()
 
