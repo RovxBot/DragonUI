@@ -422,6 +422,115 @@ end
         'ACTIONBAR_PAGE_CHANGED'
     );
 
+    -- Helper: layout buttons with rows/cols/spacings
+    local function LayoutActionButtons(prefix, count, layout)
+        if not layout then return end
+
+        local first = _G[prefix .. "1"]
+        if not first then return end
+
+        local parent = first:GetParent() or UIParent
+        local rows = math.max(1, tonumber(layout.rows) or 1)
+        local cols = math.max(1, tonumber(layout.cols) or 1)
+        local spacing = tonumber(layout.spacing) or 7
+
+        -- Normalize rows/cols so they cover all buttons
+        if cols < 1 then cols = 1 end
+        if rows < 1 then rows = 1 end
+
+        -- Anchor first button to its parent to avoid drifting
+        first:ClearAllPoints()
+        first:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
+
+        for i = 2, count do
+            local btn = _G[prefix .. i]
+            if btn then
+                local col = (i - 1) % cols
+                local row = math.floor((i - 1) / cols)
+
+                btn:ClearAllPoints()
+                if col == 0 then
+                    -- New row beneath the button "cols" steps back
+                    local above = _G[prefix .. (i - cols)]
+                    if above then
+                        btn:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -spacing)
+                    end
+                else
+                    -- Continue the row to the right
+                    local prev = _G[prefix .. (i - 1)]
+                    if prev then
+                        btn:SetPoint("LEFT", prev, "RIGHT", spacing, 0)
+                    end
+                end
+            end
+        end
+    end
+
+    -- Helper: apply alpha/mouseover/hide-in-combat behaviour
+    local function ApplyBarVisibility(barFrame, prefix, count, layout)
+        if not barFrame or not layout then return end
+
+        local baseAlpha = layout.alpha or 1
+        local fadedAlpha = layout.mouseover and 0.1 or baseAlpha
+
+        local function setAlpha(alpha)
+            barFrame:SetAlpha(alpha)
+            for i = 1, count do
+                local btn = _G[prefix .. i]
+                if btn then
+                    btn:SetAlpha(alpha)
+                end
+            end
+        end
+
+        local function showFull() setAlpha(baseAlpha) end
+        local function fadeOut() setAlpha(fadedAlpha) end
+
+        -- Mouseover fade
+        if layout.mouseover then
+            barFrame:EnableMouse(true)
+            barFrame:SetScript("OnEnter", showFull)
+            barFrame:SetScript("OnLeave", fadeOut)
+            for i = 1, count do
+                local btn = _G[prefix .. i]
+                if btn then
+                    btn:HookScript("OnEnter", showFull)
+                    btn:HookScript("OnLeave", fadeOut)
+                end
+            end
+            fadeOut()
+        else
+            -- Clear custom handlers when disabled
+            barFrame:SetScript("OnEnter", nil)
+            barFrame:SetScript("OnLeave", nil)
+            setAlpha(baseAlpha)
+        end
+
+        -- Combat hide/show
+        if not barFrame.DragonUICombatHandler then
+            barFrame.DragonUICombatHandler = CreateFrame("Frame", nil, barFrame)
+        end
+        local combatHandler = barFrame.DragonUICombatHandler
+        combatHandler:UnregisterAllEvents()
+        combatHandler:SetScript("OnEvent", nil)
+
+        if layout.hideInCombat then
+            combatHandler:RegisterEvent("PLAYER_REGEN_DISABLED")
+            combatHandler:RegisterEvent("PLAYER_REGEN_ENABLED")
+            combatHandler:SetScript("OnEvent", function(_, event)
+                if event == "PLAYER_REGEN_DISABLED" then
+                    setAlpha(0)
+                else
+                    if layout.mouseover then
+                        fadeOut()
+                    else
+                        setAlpha(baseAlpha)
+                    end
+                end
+            end)
+        end
+    end
+
     function addon.PositionActionBars()
         if InCombatLockdown() then
             return
@@ -432,50 +541,54 @@ end
             return
         end
 
-        -- Configure MultiBarRight orientation
-        if MultiBarRight then
-            if db.right.horizontal then
-                -- Horizontal mode: buttons go from left to right
-                for i = 2, 12 do
-                    local button = _G["MultiBarRightButton" .. i]
-                    if button then
-                        button:ClearAllPoints()
-                        button:SetPoint("LEFT", _G["MultiBarRightButton" .. (i - 1)], "RIGHT", 7, 0)
-                    end
-                end
-            else
-                -- Vertical mode: buttons go from top to bottom (default)
-                for i = 2, 12 do
-                    local button = _G["MultiBarRightButton" .. i]
-                    if button then
-                        button:ClearAllPoints()
-                        button:SetPoint("TOP", _G["MultiBarRightButton" .. (i - 1)], "BOTTOM", 0, -7)
-                    end
-                end
+        local layout = db.layout
+        if not layout then
+            layout = {}
+            db.layout = layout
+        end
+        local defaults = addon.defaults and addon.defaults.profile and addon.defaults.profile.mainbars and addon.defaults.profile.mainbars.layout or {}
+
+        local function getLayout(name)
+            local barLayout = layout[name] or {}
+            if not layout[name] then
+                layout[name] = barLayout
             end
+            local def = defaults[name] or {}
+            barLayout.rows = barLayout.rows or def.rows or 1
+            barLayout.cols = barLayout.cols or def.cols or 12
+            barLayout.spacing = barLayout.spacing or def.spacing or 7
+            barLayout.alpha = (barLayout.alpha ~= nil) and barLayout.alpha or def.alpha or 1
+            barLayout.mouseover = (barLayout.mouseover ~= nil) and barLayout.mouseover or def.mouseover or false
+            barLayout.hideInCombat = (barLayout.hideInCombat ~= nil) and barLayout.hideInCombat or def.hideInCombat or false
+            return barLayout
         end
 
-        -- Configure MultiBarLeft orientation
+        -- Right bar
+        local rightLayout = getLayout("right")
+        if MultiBarRight then
+            LayoutActionButtons("MultiBarRightButton", 12, rightLayout)
+            ApplyBarVisibility(MultiBarRight, "MultiBarRightButton", 12, rightLayout)
+        end
+
+        -- Left bar
+        local leftLayout = getLayout("left")
         if MultiBarLeft then
-            if db.left.horizontal then
-                -- Horizontal mode: buttons go from left to right
-                for i = 2, 12 do
-                    local button = _G["MultiBarLeftButton" .. i]
-                    if button then
-                        button:ClearAllPoints()
-                        button:SetPoint("LEFT", _G["MultiBarLeftButton" .. (i - 1)], "RIGHT", 7, 0)
-                    end
-                end
-            else
-                -- Vertical mode: buttons go from top to bottom (default)
-                for i = 2, 12 do
-                    local button = _G["MultiBarLeftButton" .. i]
-                    if button then
-                        button:ClearAllPoints()
-                        button:SetPoint("TOP", _G["MultiBarLeftButton" .. (i - 1)], "BOTTOM", 0, -7)
-                    end
-                end
-            end
+            LayoutActionButtons("MultiBarLeftButton", 12, leftLayout)
+            ApplyBarVisibility(MultiBarLeft, "MultiBarLeftButton", 12, leftLayout)
+        end
+
+        -- Bottom Left bar
+        local blLayout = getLayout("bottomleft")
+        if MultiBarBottomLeft then
+            LayoutActionButtons("MultiBarBottomLeftButton", 12, blLayout)
+            ApplyBarVisibility(MultiBarBottomLeft, "MultiBarBottomLeftButton", 12, blLayout)
+        end
+
+        -- Bottom Right bar
+        local brLayout = getLayout("bottomright")
+        if MultiBarBottomRight then
+            LayoutActionButtons("MultiBarBottomRightButton", 12, brLayout)
+            ApplyBarVisibility(MultiBarBottomRight, "MultiBarBottomRightButton", 12, brLayout)
         end
     end
 

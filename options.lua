@@ -454,6 +454,16 @@ function addon:CreateOptionsTable()
                                 end,
                                 set = function(_, value)
                                     addon.db.profile.mainbars.left.horizontal = value
+                                    -- Sync with new layout schema
+                                    addon.db.profile.mainbars.layout = addon.db.profile.mainbars.layout or {}
+                                    addon.db.profile.mainbars.layout.left = addon.db.profile.mainbars.layout.left or {}
+                                    if value then
+                                        addon.db.profile.mainbars.layout.left.rows = 1
+                                        addon.db.profile.mainbars.layout.left.cols = 12
+                                    else
+                                        addon.db.profile.mainbars.layout.left.rows = 12
+                                        addon.db.profile.mainbars.layout.left.cols = 1
+                                    end
                                     if addon.PositionActionBars then
                                         addon.PositionActionBars()
                                     end
@@ -469,6 +479,15 @@ function addon:CreateOptionsTable()
                                 end,
                                 set = function(_, value)
                                     addon.db.profile.mainbars.right.horizontal = value
+                                    addon.db.profile.mainbars.layout = addon.db.profile.mainbars.layout or {}
+                                    addon.db.profile.mainbars.layout.right = addon.db.profile.mainbars.layout.right or {}
+                                    if value then
+                                        addon.db.profile.mainbars.layout.right.rows = 1
+                                        addon.db.profile.mainbars.layout.right.cols = 12
+                                    else
+                                        addon.db.profile.mainbars.layout.right.rows = 12
+                                        addon.db.profile.mainbars.layout.right.cols = 1
+                                    end
                                     if addon.PositionActionBars then
                                         addon.PositionActionBars()
                                     end
@@ -476,6 +495,116 @@ function addon:CreateOptionsTable()
                                 order = 3
                             }
                         }
+                    },
+                    layouts = {
+                        type = 'group',
+                        name = "Layouts & Visibility",
+                        inline = true,
+                        order = 3,
+                        args = (function()
+                            local function ensureLayout(bar)
+                                addon.db.profile.mainbars.layout = addon.db.profile.mainbars.layout or {}
+                                addon.db.profile.mainbars.layout[bar] = addon.db.profile.mainbars.layout[bar] or {}
+                                return addon.db.profile.mainbars.layout[bar]
+                            end
+
+                            local function makeBarOptions(key, label, orderBase)
+                                return {
+                                    type = 'group',
+                                    name = label,
+                                    inline = true,
+                                    order = orderBase,
+                                    args = {
+                                        rows = {
+                                            type = 'range',
+                                            name = "Rows",
+                                            min = 1, max = 12, step = 1,
+                                            get = function()
+                                                return ensureLayout(key).rows or 1
+                                            end,
+                                            set = function(_, val)
+                                                ensureLayout(key).rows = val
+                                                if addon.PositionActionBars then addon.PositionActionBars() end
+                                            end,
+                                            order = 1
+                                        },
+                                        cols = {
+                                            type = 'range',
+                                            name = "Columns",
+                                            min = 1, max = 12, step = 1,
+                                            get = function()
+                                                return ensureLayout(key).cols or 12
+                                            end,
+                                            set = function(_, val)
+                                                ensureLayout(key).cols = val
+                                                if addon.PositionActionBars then addon.PositionActionBars() end
+                                            end,
+                                            order = 2
+                                        },
+                                        spacing = {
+                                            type = 'range',
+                                            name = "Spacing",
+                                            min = 0, max = 20, step = 1,
+                                            get = function()
+                                                return ensureLayout(key).spacing or 7
+                                            end,
+                                            set = function(_, val)
+                                                ensureLayout(key).spacing = val
+                                                if addon.PositionActionBars then addon.PositionActionBars() end
+                                            end,
+                                            order = 3
+                                        },
+                                        alpha = {
+                                            type = 'range',
+                                            name = "Alpha",
+                                            min = 0, max = 1, step = 0.05,
+                                            get = function()
+                                                return ensureLayout(key).alpha or 1
+                                            end,
+                                            set = function(_, val)
+                                                ensureLayout(key).alpha = val
+                                                if addon.PositionActionBars then addon.PositionActionBars() end
+                                            end,
+                                            order = 4
+                                        },
+                                        mouseover = {
+                                            type = 'toggle',
+                                            name = "Fade on Mouseover",
+                                            desc = "Fade the bar until you hover it or its buttons.",
+                                            get = function()
+                                                return ensureLayout(key).mouseover or false
+                                            end,
+                                            set = function(_, val)
+                                                ensureLayout(key).mouseover = val
+                                                if addon.PositionActionBars then addon.PositionActionBars() end
+                                            end,
+                                            order = 5
+                                        },
+                                        hideInCombat = {
+                                            type = 'toggle',
+                                            name = "Hide In Combat",
+                                            desc = "Hide this bar when you enter combat (shows again out of combat).",
+                                            get = function()
+                                                return ensureLayout(key).hideInCombat or false
+                                            end,
+                                            set = function(_, val)
+                                                ensureLayout(key).hideInCombat = val
+                                                if addon.PositionActionBars then addon.PositionActionBars() end
+                                            end,
+                                            order = 6
+                                        }
+                                    }
+                                }
+                            end
+
+                            return {
+                                main = makeBarOptions("main", "Main Bar", 1),
+                                bottomleft = makeBarOptions("bottomleft", "Bottom Left", 2),
+                                bottomright = makeBarOptions("bottomright", "Bottom Right", 3),
+                                right = makeBarOptions("right", "Right Bar", 4),
+                                left = makeBarOptions("left", "Left Bar", 5)
+                            }
+                        end)()
                     },
                     buttons = {
                         type = 'group',

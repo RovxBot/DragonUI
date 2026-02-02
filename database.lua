@@ -114,7 +114,30 @@ local defaults = {
             scale_leftbar = 0.9,
             scale_bottomleft = 0.9,
             scale_bottomright = 0.9,
-            scale_vehicle = 1
+            scale_vehicle = 1,
+
+            -- New layout & visibility controls (rows/cols/spacing/alpha/behaviour)
+            layout = {
+                main = { rows = 1, cols = 12, spacing = 6, alpha = 1, mouseover = false, hideInCombat = false },
+                right = { rows = 12, cols = 1, spacing = 7, alpha = 1, mouseover = false, hideInCombat = false },
+                left = { rows = 12, cols = 1, spacing = 7, alpha = 1, mouseover = false, hideInCombat = false },
+                bottomleft = { rows = 1, cols = 12, spacing = 7, alpha = 1, mouseover = false, hideInCombat = false },
+                bottomright = { rows = 1, cols = 12, spacing = 7, alpha = 1, mouseover = false, hideInCombat = false },
+                pet = { rows = 1, cols = 10, spacing = 6, alpha = 1, mouseover = false, hideInCombat = false },
+                stance = { rows = 1, cols = 10, spacing = 6, alpha = 1, mouseover = false, hideInCombat = false },
+                vehicle = { rows = 1, cols = 6, spacing = 7, alpha = 1, mouseover = false, hideInCombat = false }
+            },
+
+            -- Placeholder for future flyout/paging polish
+            flyout = {
+                direction = "UP",
+                openOnHover = true,
+                closeDelay = 0.1,
+                spacing = 6
+            },
+            paging = {
+                custom_state_driver = ""
+            }
         },
 
         micromenu = {
