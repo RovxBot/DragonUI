@@ -10,6 +10,7 @@ local gridSize = 32;
 local snapToGrid = true;
 local inspectorFrame = nil;
 local activeMover = nil;
+local inspectorLinkedLayoutKey = nil; -- for action bars orientation/scale
 
 -- StaticPopup para reiniciar UI después de salir del modo editor
 StaticPopupDialogs["DRAGONUI_RELOAD_UI"] = {
@@ -88,6 +89,7 @@ local function applyPosition(name, entry, opts)
     local parentFrame = _G[parentName] or UIParent
     local x = opts.x or 0
     local y = opts.y or 0
+    local scale = opts.scale or entry.frame:GetScale() or 1
 
     local frame = entry.frame
     if not frame then return end
@@ -95,6 +97,7 @@ local function applyPosition(name, entry, opts)
 
     frame:ClearAllPoints()
     frame:SetPoint(point, parentFrame, opts.anchorParentPoint or point, x, y)
+    frame:SetScale(scale)
 
     if #cfgPath == 2 then
         SaveUIFramePosition(frame, cfgPath[1], cfgPath[2])
@@ -113,6 +116,7 @@ local function getCurrentPosition(entry)
         anchorParentPoint = relativePoint or point or "CENTER",
         x = x or 0,
         y = y or 0,
+        scale = entry.frame:GetScale() or 1
     }
 end
 
@@ -120,7 +124,7 @@ local function ensureInspectorFrame()
     if inspectorFrame then return inspectorFrame end
 
     local f = CreateFrame("Frame", "DragonUIInspectorFrame", UIParent, "BackdropTemplate")
-    f:SetSize(240, 180)
+    f:SetSize(260, 230)
     f:SetPoint("CENTER", UIParent, "CENTER", 320, 120)
     f:SetFrameStrata("DIALOG")
     f:SetFrameLevel(120)
@@ -178,6 +182,8 @@ local function ensureInspectorFrame()
     _G[ySlider:GetName() .. "Low"]:SetText("-1000")
     _G[ySlider:GetName() .. "High"]:SetText("1000")
 
+    scaleSlider:SetPoint("TOPLEFT", ySlider, "BOTTOMLEFT", 0, -20)
+
     local resetBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     resetBtn:SetSize(80, 20)
     resetBtn:SetPoint("BOTTOMLEFT", 12, 10)
@@ -193,6 +199,7 @@ local function ensureInspectorFrame()
     f.parentBox = parentBox
     f.xSlider = xSlider
     f.ySlider = ySlider
+    f.scaleSlider = scaleSlider
     f.resetBtn = resetBtn
     f.anchorLabel = anchorLabel
 
@@ -210,6 +217,7 @@ local function refreshInspector(entryName, entry)
     inspectorFrame.parentBox:SetText(pos.anchorParent or "UIParent")
     inspectorFrame.xSlider:SetValue(pos.x or 0)
     inspectorFrame.ySlider:SetValue(pos.y or 0)
+    inspectorFrame.scaleSlider:SetValue(pos.scale or 1)
 end
 
 local function initAnchorDropdown(frame)
@@ -268,6 +276,7 @@ local function wireInspectorHandlers()
     end
     sliderHandler(inspectorFrame.xSlider, "x")
     sliderHandler(inspectorFrame.ySlider, "y")
+    sliderHandler(inspectorFrame.scaleSlider, "scale")
 
     inspectorFrame.resetBtn:SetScript("OnClick", function()
         if not activeMover then return end
@@ -525,6 +534,17 @@ function EditorMode:SetActiveMover(frame)
     if entry then
         inspectorFrame:Show()
         refreshInspector(name, entry)
+        inspectorLinkedLayoutKey = nil
+        -- If this mover matches an action bar, remember which layout to adjust for orientation later
+        if entry.configPath and entry.configPath[1] == "widgets" then
+            local key = entry.configPath[2]
+            if key == "mainbar" then inspectorLinkedLayoutKey = "main"
+            elseif key == "rightbar" then inspectorLinkedLayoutKey = "right"
+            elseif key == "leftbar" then inspectorLinkedLayoutKey = "left"
+            elseif key == "bottombarleft" then inspectorLinkedLayoutKey = "bottomleft"
+            elseif key == "bottombarright" then inspectorLinkedLayoutKey = "bottomright"
+            end
+        end
     end
 end
 
@@ -676,3 +696,11 @@ StaticPopupDialogs["DRAGONUI_RESET_ALL_POSITIONS"] = {
     hideOnEscape = true,
     preferredIndex = 3,
 }
+    local scaleLabel = makeLabel("Scale", -218)
+    local scaleSlider = CreateFrame("Slider", "DragonUIInspectorScale", f, "OptionsSliderTemplate")
+    scaleSlider:SetPoint("TOPLEFT", scaleLabel, "BOTTOMLEFT", 0, -6)
+    scaleSlider:SetWidth(180)
+    scaleSlider:SetMinMaxValues(0.5, 2.0)
+    scaleSlider:SetValueStep(0.01)
+    _G[scaleSlider:GetName() .. "Low"]:SetText("0.5")
+    _G[scaleSlider:GetName() .. "High"]:SetText("2.0")
