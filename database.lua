@@ -92,6 +92,13 @@ local defaults = {
                 posY = 7
             }
         },
+
+        -- Edit Mode settings
+        editmode = {
+            showGrid = true,
+            snapToGrid = true,
+            gridSize = 32
+        },
         -- Quest Tracker
         questtracker = {
             anchor = "TOPRIGHT",

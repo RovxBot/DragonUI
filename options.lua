@@ -89,6 +89,52 @@ function addon:CreateOptionsTable()
                 order = 0.5
             },
 
+            editmode_settings = {
+                type = 'group',
+                name = "Edit Mode",
+                inline = true,
+                order = 0.55,
+                args = {
+                    show_grid = {
+                        type = 'toggle',
+                        name = "Show Grid",
+                        get = function() return addon.db.profile.editmode.showGrid end,
+                        set = function(_, val)
+                            addon.db.profile.editmode.showGrid = val
+                            if addon.EditorMode and addon.EditorMode.UpdateGridVisibility then
+                                addon.EditorMode:UpdateGridVisibility()
+                            end
+                        end,
+                        order = 1
+                    },
+                    snap_to_grid = {
+                        type = 'toggle',
+                        name = "Snap to Grid",
+                        get = function() return addon.db.profile.editmode.snapToGrid end,
+                        set = function(_, val)
+                            addon.db.profile.editmode.snapToGrid = val
+                        end,
+                        order = 2
+                    },
+                    grid_size = {
+                        type = 'range',
+                        name = "Grid Size",
+                        min = 8, max = 128, step = 1,
+                        get = function() return addon.db.profile.editmode.gridSize end,
+                        set = function(_, val)
+                            addon.db.profile.editmode.gridSize = val
+                            if addon.MoverSystem then
+                                addon.MoverSystem:SetGridSize(val)
+                            end
+                            if addon.EditorMode and addon.EditorMode.UpdateGridSize then
+                                addon.EditorMode:UpdateGridSize(val)
+                            end
+                        end,
+                        order = 3
+                    }
+                }
+            },
+
             -- NUEVA SECCIÓN: MODULES
             modules = {
                 type = 'group',

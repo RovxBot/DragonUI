@@ -392,6 +392,14 @@ function SaveUIFramePosition(frame, configPath1, configPath2)
     end
 
     local anchor, _, relativePoint, posX, posY = frame:GetPoint(1) -- Primer punto
+    -- Snap to grid if enabled
+    if addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.snapToGrid then
+        local size = addon.db.profile.editmode.gridSize or 32
+        if size and size > 0 then
+            posX = math.floor((posX or 0) / size + 0.5) * size
+            posY = math.floor((posY or 0) / size + 0.5) * size
+        end
+    end
 
     --  MANEJAR RUTAS ANIDADAS (widgets.player)
     if configPath2 then

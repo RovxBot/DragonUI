@@ -6,6 +6,8 @@ addon.EditorMode = EditorMode;
 local gridOverlay = nil;
 local exitEditorButton = nil;
 local resetAllButton = nil;
+local gridSize = 32;
+local snapToGrid = true;
 
 -- StaticPopup para reiniciar UI después de salir del modo editor
 StaticPopupDialogs["DRAGONUI_RELOAD_UI"] = {
@@ -118,7 +120,7 @@ local function createGridOverlay()
     local screenHeight = GetScreenHeight()
     
     --  ALGORITMO SIMÉTRICO: Partir desde el centro hacia afuera
-    local cellSize = 32  -- Tamaño base de celda
+    local cellSize = gridSize  -- Tamaño base de celda
     
     -- Calcular cuántas celdas completas caben desde el centro hacia cada lado
     local halfCellsHorizontal = math.floor((screenWidth / 2) / cellSize)
@@ -189,10 +191,40 @@ local function createGridOverlay()
     gridOverlay:Hide()
 end
 
+function EditorMode:UpdateGridSize(size)
+    gridSize = size or gridSize
+    if gridOverlay and gridOverlay:IsShown() then
+        gridOverlay:Hide()
+        gridOverlay = nil
+        createGridOverlay()
+        gridOverlay:Show()
+    end
+end
+
+function EditorMode:UpdateGridVisibility()
+    if not gridOverlay then
+        createGridOverlay()
+    end
+    if addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.showGrid then
+        gridOverlay:Show()
+    else
+        gridOverlay:Hide()
+    end
+end
+
 function EditorMode:Show()
     if InCombatLockdown() then
         
         return
+    end
+
+    -- Load current settings
+    if addon.db and addon.db.profile and addon.db.profile.editmode then
+        gridSize = addon.db.profile.editmode.gridSize or gridSize
+        snapToGrid = addon.db.profile.editmode.snapToGrid ~= false
+        if addon.MoverSystem then
+            addon.MoverSystem:SetGridSize(gridSize)
+        end
     end
 
     createGridOverlay()
