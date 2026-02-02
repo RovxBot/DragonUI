@@ -11,6 +11,7 @@ local snapToGrid = true;
 local inspectorFrame = nil;
 local activeMover = nil;
 local inspectorLinkedLayoutKey = nil; -- for action bars orientation/scale
+local activeHighlight = nil;
 
 -- StaticPopup para reiniciar UI después de salir del modo editor
 StaticPopupDialogs["DRAGONUI_RELOAD_UI"] = {
@@ -236,6 +237,13 @@ local function refreshInspector(entryName, entry)
         inspectorFrame.orientationDrop:Hide()
         inspectorFrame.orientationDrop.label:Hide()
     end
+
+    -- Highlight stays on active mover
+    if activeHighlight and activeMover then
+        activeHighlight:ClearAllPoints()
+        activeHighlight:SetAllPoints(activeMover)
+        activeHighlight:Show()
+    end
 end
 
 local function initAnchorDropdown(frame)
@@ -349,7 +357,8 @@ local function wireInspectorHandlers()
                 anchorParent = entry.defaults.anchorParent or "CENTER",
                 anchorParentPoint = entry.defaults.anchorParent or "CENTER",
                 x = entry.defaults.posX or entry.defaults.x or 0,
-                y = entry.defaults.posY or entry.defaults.y or 0
+                y = entry.defaults.posY or entry.defaults.y or 0,
+                scale = entry.defaults.scale or 1
             })
             refreshInspector(name, entry)
         end
@@ -525,6 +534,18 @@ function EditorMode:Show()
     ensureInspectorFrame()
     wireInspectorHandlers()
 
+    if not activeHighlight then
+        activeHighlight = CreateFrame("Frame", "DragonUIActiveHighlight", UIParent)
+        activeHighlight:SetFrameStrata("FULLSCREEN_DIALOG")
+        activeHighlight:SetFrameLevel(200)
+        local tex = activeHighlight:CreateTexture(nil, "OVERLAY")
+        tex:SetAllPoints()
+        tex:SetTexture(0, 0.8, 1, 0.25)
+        tex:SetBlendMode("ADD")
+        activeHighlight.tex = tex
+        activeHighlight:Hide()
+    end
+
     --  NUEVO: USAR SISTEMA CENTRALIZADO - UNA SOLA LÍNEA
     addon:ShowAllEditableFrames()
     
@@ -553,6 +574,8 @@ function EditorMode:Hide(showReloadPopup)
     if exitEditorButton then exitEditorButton:Hide() end
     if resetAllButton then resetAllButton:Hide() end
     if inspectorFrame then inspectorFrame:Hide() end
+    if activeHighlight then activeHighlight:Hide() end
+    activeMover = nil
 
     --  NUEVO: USAR SISTEMA CENTRALIZADO - UNA SOLA LÍNEA
     addon:HideAllEditableFrames(true) -- true = refresh and save positions
@@ -597,6 +620,12 @@ function EditorMode:SetActiveMover(frame)
             elseif key == "bottombarleft" then inspectorLinkedLayoutKey = "bottomleft"
             elseif key == "bottombarright" then inspectorLinkedLayoutKey = "bottomright"
             end
+        end
+
+        if activeHighlight and entry.frame then
+            activeHighlight:ClearAllPoints()
+            activeHighlight:SetAllPoints(entry.frame)
+            activeHighlight:Show()
         end
     end
 end

@@ -298,6 +298,9 @@ function CreateUIFrame(width, height, frameName)
         self:StartMoving()
         self.DragonUIDragging = true
         self.DragonUILastUpdate = 0
+        if addon.EditorMode and addon.EditorMode.SetActiveMover then
+            addon.EditorMode:SetActiveMover(self)
+        end
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
