@@ -335,7 +335,6 @@ function CreateUIFrame(width, height, frameName)
         header:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
         header:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 2, 2)
         header:SetHeight(18)
-        header:Hide()
         frame.editorHeader = header
 
         local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -370,7 +369,6 @@ function CreateUIFrame(width, height, frameName)
             btn:SetText(label)
             btn:SetPoint("RIGHT", anchor, "LEFT", -2, 0)
             btn:SetScript("OnClick", function() nudge(dx, dy) end)
-            btn:Hide()
             return btn
         end
 
@@ -380,13 +378,26 @@ function CreateUIFrame(width, height, frameName)
         rightBtn:SetText("→")
         rightBtn:SetPoint("RIGHT", header, "RIGHT", -2, 0)
         rightBtn:SetScript("OnClick", function() nudge(1, 0) end)
-        rightBtn:Hide()
 
         local leftBtn = makeBtn("←", rightBtn, -1, 0)
         local downBtn = makeBtn("↓", leftBtn, 0, -1)
         local upBtn = makeBtn("↑", downBtn, 0, 1)
 
         header.nudgeButtons = {upBtn, downBtn, leftBtn, rightBtn}
+
+        -- Hover-only visibility
+        local function showHeader(show)
+            if show then
+                header:Show()
+                for _, b in ipairs(header.nudgeButtons) do b:Show() end
+            else
+                header:Hide()
+                for _, b in ipairs(header.nudgeButtons) do b:Hide() end
+            end
+        end
+        frame:SetScript("OnEnter", function() showHeader(true) end)
+        frame:SetScript("OnLeave", function() showHeader(false) end)
+        showHeader(false)
     end
 
     return frame
