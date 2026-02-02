@@ -136,14 +136,18 @@ local function ensureInspectorFrame()
     f:RegisterForDrag("LeftButton")
     f:SetScript("OnDragStart", f.StartMoving)
     f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    f:SetAlpha(0)
+    f.fadeIn = UIFrameFadeIn
+    f.fadeOut = UIFrameFadeOut
 
     f:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true, tileSize = 16, edgeSize = 16,
-        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+        bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 14,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 }
     })
-    f:SetBackdropColor(0.05, 0.07, 0.1, 0.92)
+    f:SetBackdropColor(0.03, 0.05, 0.08, 0.92)
+    f:SetBackdropBorderColor(0.2, 0.6, 1, 0.9)
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     title:SetPoint("TOP", 0, -8)
@@ -706,7 +710,7 @@ function EditorMode:SetActiveMover(frame)
     end
     local name, entry = findMoverEntryByFrame(frame)
     if entry then
-        inspectorFrame:Show()
+        UIFrameFadeIn(inspectorFrame, 0.1, inspectorFrame:GetAlpha(), 1)
         refreshInspector(name, entry)
         inspectorLinkedLayoutKey = nil
         -- If this mover matches an action bar, remember which layout to adjust for orientation later
@@ -723,7 +727,7 @@ function EditorMode:SetActiveMover(frame)
         if activeHighlight and entry.frame then
             activeHighlight:ClearAllPoints()
             activeHighlight:SetAllPoints(entry.frame)
-            activeHighlight:Show()
+            UIFrameFadeIn(activeHighlight, 0.08, activeHighlight:GetAlpha(), 0.6)
         end
     end
 end
