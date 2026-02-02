@@ -97,7 +97,8 @@ local defaults = {
         editmode = {
             showGrid = true,
             snapToGrid = true,
-            gridSize = 32
+            gridSize = 32,
+            presets = {}
         },
         -- Quest Tracker
         questtracker = {

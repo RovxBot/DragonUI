@@ -111,11 +111,14 @@ function MoverSystem:ApplyPosition(name)
 
     local anchor = cfg.anchor or cfg.anchorPoint or "CENTER"
     local anchorParent = cfg.anchorParent or "CENTER"
+    local anchorParentPoint = cfg.anchorParentPoint or anchor
     local x = cfg.posX or cfg.x or 0
     local y = cfg.posY or cfg.y or 0
+    local scale = cfg.scale or entry.frame:GetScale() or 1
 
     entry.frame:ClearAllPoints()
-    entry.frame:SetPoint(anchor, UIParent, anchorParent, x, y)
+    entry.frame:SetPoint(anchor, _G[anchorParent] or UIParent, anchorParentPoint, x, y)
+    entry.frame:SetScale(scale)
 end
 
 function MoverSystem:ApplyAll()
@@ -170,4 +173,3 @@ function MoverSystem:SetGridSize(size)
         self.gridSize = size
     end
 end
-

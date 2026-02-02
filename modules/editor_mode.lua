@@ -13,7 +13,12 @@ local activeMover = nil;
 local inspectorLinkedLayoutKey = nil; -- for action bars orientation/scale
 local activeHighlight = nil;
 local keyCatcher = nil;
-local savedPresets = {}; -- session presets per mover
+local function getPresetStore()
+    if not addon.db or not addon.db.profile then return nil end
+    addon.db.profile.editmode = addon.db.profile.editmode or {}
+    addon.db.profile.editmode.presets = addon.db.profile.editmode.presets or {}
+    return addon.db.profile.editmode.presets
+end
 
 -- StaticPopup para reiniciar UI después de salir del modo editor
 StaticPopupDialogs["DRAGONUI_RELOAD_UI"] = {
@@ -421,9 +426,11 @@ local function wireInspectorHandlers()
 
     inspectorFrame.revertBtn:SetScript("OnClick", function()
         if not activeMover then return end
+        local store = getPresetStore()
+        if not store then return end
         local name, entry = findMoverEntryByFrame(activeMover)
         if not entry then return end
-        local preset = savedPresets[name]
+        local preset = store[name]
         if preset then
             applyPosition(name, entry, preset)
             refreshInspector(name, entry)
@@ -432,9 +439,11 @@ local function wireInspectorHandlers()
 
     inspectorFrame.saveBtn:SetScript("OnClick", function()
         if not activeMover then return end
+        local store = getPresetStore()
+        if not store then return end
         local name, entry = findMoverEntryByFrame(activeMover)
         if not entry then return end
-        savedPresets[name] = getCurrentPosition(entry)
+        store[name] = getCurrentPosition(entry)
     end)
 end
 
@@ -625,7 +634,6 @@ function EditorMode:Show()
         keyCatcher:EnableKeyboard(true)
         keyCatcher:SetFrameStrata("FULLSCREEN_DIALOG")
         keyCatcher:SetFrameLevel(201)
-        keyCatcher:SetPropagateKeyboardInput(false)
         keyCatcher:SetScript("OnKeyDown", function(_, key)
             if not activeMover or InCombatLockdown() then return end
             local step = (addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.gridSize) or 32
@@ -675,7 +683,9 @@ function EditorMode:Hide(showReloadPopup)
     if exitEditorButton then exitEditorButton:Hide() end
     if resetAllButton then resetAllButton:Hide() end
     if inspectorFrame then inspectorFrame:Hide() end
-    if activeHighlight then activeHighlight:Hide() end
+    if activeHighlight then
+        UIFrameFadeOut(activeHighlight, 0.1, activeHighlight:GetAlpha(), 0)
+    end
     if keyCatcher then keyCatcher:Hide() end
     activeMover = nil
 

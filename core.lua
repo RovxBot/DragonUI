@@ -500,7 +500,9 @@ function SaveUIFramePosition(frame, configPath1, configPath2)
         return
     end
 
-    local anchor, _, relativePoint, posX, posY = frame:GetPoint(1) -- Primer punto
+    local anchor, relativeTo, relativePoint, posX, posY = frame:GetPoint(1) -- Primer punto
+    local scale = frame:GetScale() or 1
+    local anchorParent = (relativeTo and relativeTo.GetName and relativeTo:GetName()) or "UIParent"
     -- Snap to grid if enabled
     if addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.snapToGrid then
         local size = addon.db.profile.editmode.gridSize or 32
@@ -522,8 +524,11 @@ function SaveUIFramePosition(frame, configPath1, configPath2)
         end
 
         addon.db.profile[configPath1][configPath2].anchor = anchor or "CENTER"
+        addon.db.profile[configPath1][configPath2].anchorParent = anchorParent or "CENTER"
+        addon.db.profile[configPath1][configPath2].anchorParentPoint = relativePoint or anchor or "CENTER"
         addon.db.profile[configPath1][configPath2].posX = posX or 0
         addon.db.profile[configPath1][configPath2].posY = posY or 0
+        addon.db.profile[configPath1][configPath2].scale = scale or 1
 
 
     else
@@ -539,8 +544,11 @@ function SaveUIFramePosition(frame, configPath1, configPath2)
         end
 
         addon.db.profile.widgets[widgetName].anchor = anchor or "CENTER"
+        addon.db.profile.widgets[widgetName].anchorParent = anchorParent or "CENTER"
+        addon.db.profile.widgets[widgetName].anchorParentPoint = relativePoint or anchor or "CENTER"
         addon.db.profile.widgets[widgetName].posX = posX or 0
         addon.db.profile.widgets[widgetName].posY = posY or 0
+        addon.db.profile.widgets[widgetName].scale = scale or 1
 
 
     end
