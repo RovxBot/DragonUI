@@ -296,9 +296,12 @@ function CreateUIFrame(width, height, frameName)
     frame:SetMovable(false)
     frame:SetScript("OnDragStart", function(self, button)
         self:StartMoving()
+        self.DragonUIDragging = true
+        self.DragonUILastUpdate = 0
     end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
+        self.DragonUIDragging = false
         
         --  AUTO-SAVE: Buscar este frame en EditableFrames y guardar posición automáticamente
         for frameName, frameData in pairs(addon.EditableFrames) do
@@ -341,6 +344,12 @@ function CreateUIFrame(width, height, frameName)
         title:SetPoint("LEFT", header, "LEFT", 2, 0)
         title:SetText(frameName)
         frame.editorText = title
+
+        -- XY readout
+        local coords = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        coords:SetPoint("RIGHT", header, "RIGHT", -2, 0)
+        coords:SetText("")
+        header.coords = coords
 
         local function nudge(dx, dy)
             if InCombatLockdown() then return end
@@ -390,15 +399,42 @@ function CreateUIFrame(width, height, frameName)
             if show then
                 header:Show()
                 for _, b in ipairs(header.nudgeButtons) do b:Show() end
+                header.coords:Show()
+                if addon.EditorMode and addon.EditorMode.SetActiveMover then
+                    addon.EditorMode:SetActiveMover(frame)
+                end
             else
                 header:Hide()
                 for _, b in ipairs(header.nudgeButtons) do b:Hide() end
+                header.coords:Hide()
             end
         end
         frame:SetScript("OnEnter", function() showHeader(true) end)
         frame:SetScript("OnLeave", function() showHeader(false) end)
         showHeader(false)
     end
+
+    -- Live drag update (snap + readout)
+    frame:SetScript("OnUpdate", function(self, elapsed)
+        if not self.DragonUIDragging then return end
+        self.DragonUILastUpdate = (self.DragonUILastUpdate or 0) + elapsed
+        if self.DragonUILastUpdate < 0.01 then return end -- throttle
+        self.DragonUILastUpdate = 0
+
+        local point, relativeTo, relativePoint, x, y = self:GetPoint(1)
+        local size = addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.gridSize or 32
+        local snap = addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.snapToGrid
+        if snap and size and size > 0 then
+            x = math.floor((x or 0) / size + 0.5) * size
+            y = math.floor((y or 0) / size + 0.5) * size
+            self:ClearAllPoints()
+            self:SetPoint(point or "CENTER", relativeTo or UIParent, relativePoint or point or "CENTER", x, y)
+        end
+
+        if self.editorHeader and self.editorHeader.coords then
+            self.editorHeader.coords:SetText(string.format("x:%d y:%d", x or 0, y or 0))
+        end
+    end)
 
     return frame
 end
