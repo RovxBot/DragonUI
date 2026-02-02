@@ -164,7 +164,11 @@ local function ensureInspectorFrame()
     parentBox:SetPoint("TOPLEFT", parentLabel, "BOTTOMLEFT", 0, -4)
     parentBox:SetAutoFocus(false)
 
-    local xLabel = makeLabel("X", -118)
+    local orientationLabel = makeLabel("Orientation", -118)
+    local orientationDrop = CreateFrame("Frame", "DragonUIInspectorOrientationDrop", f, "UIDropDownMenuTemplate")
+    orientationDrop:SetPoint("TOPLEFT", orientationLabel, "BOTTOMLEFT", -14, -2)
+
+    local xLabel = makeLabel("X", -168)
     local xSlider = CreateFrame("Slider", "DragonUIInspectorX", f, "OptionsSliderTemplate")
     xSlider:SetPoint("TOPLEFT", xLabel, "BOTTOMLEFT", 0, -6)
     xSlider:SetWidth(180)
@@ -173,7 +177,7 @@ local function ensureInspectorFrame()
     _G[xSlider:GetName() .. "Low"]:SetText("-1000")
     _G[xSlider:GetName() .. "High"]:SetText("1000")
 
-    local yLabel = makeLabel("Y", -168)
+    local yLabel = makeLabel("Y", -218)
     local ySlider = CreateFrame("Slider", "DragonUIInspectorY", f, "OptionsSliderTemplate")
     ySlider:SetPoint("TOPLEFT", yLabel, "BOTTOMLEFT", 0, -6)
     ySlider:SetWidth(180)
@@ -197,6 +201,7 @@ local function ensureInspectorFrame()
 
     f.anchorDrop = anchorDrop
     f.parentBox = parentBox
+    f.orientationDrop = orientationDrop
     f.xSlider = xSlider
     f.ySlider = ySlider
     f.scaleSlider = scaleSlider
@@ -218,6 +223,19 @@ local function refreshInspector(entryName, entry)
     inspectorFrame.xSlider:SetValue(pos.x or 0)
     inspectorFrame.ySlider:SetValue(pos.y or 0)
     inspectorFrame.scaleSlider:SetValue(pos.scale or 1)
+
+    -- Orientation dropdown only meaningful for action bars
+    if inspectorLinkedLayoutKey and addon.db and addon.db.profile and addon.db.profile.mainbars and addon.db.profile.mainbars.layout then
+        local layout = addon.db.profile.mainbars.layout[inspectorLinkedLayoutKey] or {}
+        local orientation = (layout.rows == 1) and "HORIZONTAL" or "VERTICAL"
+        UIDropDownMenu_SetSelectedValue(inspectorFrame.orientationDrop, orientation)
+        UIDropDownMenu_SetText(inspectorFrame.orientationDrop, orientation)
+        inspectorFrame.orientationDrop:Show()
+        inspectorFrame.orientationDrop.label:Show()
+    else
+        inspectorFrame.orientationDrop:Hide()
+        inspectorFrame.orientationDrop.label:Hide()
+    end
 end
 
 local function initAnchorDropdown(frame)
@@ -244,9 +262,44 @@ local function initAnchorDropdown(frame)
     end)
 end
 
+local function initOrientationDropdown(frame)
+    frame.label = frame.label or frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.label:SetPoint("BOTTOMLEFT", frame, "TOPLEFT", 16, 2)
+    frame.label:SetText("Orientation")
+
+    UIDropDownMenu_Initialize(frame, function(self, level)
+        for _, v in ipairs({"HORIZONTAL", "VERTICAL"}) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = v
+            info.value = v
+            info.func = function()
+                UIDropDownMenu_SetSelectedValue(frame, v)
+                UIDropDownMenu_SetText(frame, v)
+                if inspectorLinkedLayoutKey and addon.db and addon.db.profile and addon.db.profile.mainbars then
+                    addon.db.profile.mainbars.layout = addon.db.profile.mainbars.layout or {}
+                    addon.db.profile.mainbars.layout[inspectorLinkedLayoutKey] = addon.db.profile.mainbars.layout[inspectorLinkedLayoutKey] or {}
+                    local layout = addon.db.profile.mainbars.layout[inspectorLinkedLayoutKey]
+                    if v == "HORIZONTAL" then
+                        layout.rows = 1
+                        layout.cols = 12
+                    else
+                        layout.rows = 12
+                        layout.cols = 1
+                    end
+                    if addon.PositionActionBars then
+                        addon.PositionActionBars()
+                    end
+                end
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+end
+
 local function wireInspectorHandlers()
     if not inspectorFrame then return end
     initAnchorDropdown(inspectorFrame.anchorDrop)
+    initOrientationDropdown(inspectorFrame.orientationDrop)
 
     inspectorFrame.parentBox:SetScript("OnEnterPressed", function(self)
         self:ClearFocus()
