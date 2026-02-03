@@ -317,6 +317,19 @@ function addon:CreateOptionsTable()
                         end,
                         order = 21
                     },
+                    force_vehicle_art = {
+                        type = 'toggle',
+                        name = "Force Vehicle Art",
+                        desc = "Use DragonUI vehicle art instead of the default vehicle bar when possible.",
+                        get = function()
+                            return addon.db.profile.modules.vehicle and addon.db.profile.modules.vehicle.force_art
+                        end,
+                        set = function(_, val)
+                            addon.db.profile.modules.vehicle.force_art = val
+                            StaticPopup_Show("DRAGONUI_RELOAD_UI")
+                        end,
+                        order = 21.1,
+                    },
 
                     -- MICRO MENU & BAGS
                     micromenu_enabled = {

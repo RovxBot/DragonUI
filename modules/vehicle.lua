@@ -43,6 +43,11 @@ local function IsModuleEnabled()
     return cfg and cfg.enabled
 end
 
+local function ForceArtEnabled()
+    local cfg = GetModuleConfig()
+    return cfg and cfg.force_art
+end
+
 local function IsMainbarsModuleEnabled()
     local cfg = addon.db and addon.db.profile and addon.db.profile.modules and addon.db.profile.modules.mainbars
     return cfg and cfg.enabled
@@ -83,7 +88,7 @@ local function CreateVehicleFrames()
         'Frame',
         'DragonUI_VehicleBarBackground',
         UIParent,
-        'VehicleBarUiTemplate'
+        ForceArtEnabled() and 'VehicleBarUiTemplate' or nil
     )
     
     vehiclebar = CreateFrame(

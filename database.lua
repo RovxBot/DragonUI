@@ -446,7 +446,8 @@ local defaults = {
                 enabled = true -- Apply DragonUI button styling and enhancements
             },
             vehicle = {
-                enabled = true -- Apply DragonUI vehicle interface enhancements
+                enabled = true, -- Apply DragonUI vehicle interface enhancements
+                force_art = true -- Force DragonUI vehicle art instead of default
             },
             stance = {
                 enabled = true -- Apply DragonUI stance/shapeshift bar positioning and styling
