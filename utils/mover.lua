@@ -124,6 +124,7 @@ function MoverSystem:ApplyPosition(name)
     entry.frame:SetPoint(anchor, parentFrame, anchorParentPoint, x, y)
     entry.frame:SetScale(scale)
 
+    -- Optional callback for child adjustments
     if entry.onApplied then
         pcall(entry.onApplied, entry.frame, cfg)
     end

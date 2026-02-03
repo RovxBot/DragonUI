@@ -99,7 +99,8 @@ local defaults = {
             snapToGrid = true,
             gridSize = 32,
             presets = {},
-            selectedPreset = ""
+            selectedPreset = "",
+            defaultPresetName = "Default"
         },
         -- Quest Tracker
         questtracker = {

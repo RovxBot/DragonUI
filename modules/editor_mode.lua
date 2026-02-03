@@ -163,8 +163,15 @@ local function ensureInspectorFrame()
     f:SetBackdropColor(0.02, 0.04, 0.08, 0.94)
     f:SetBackdropBorderColor(0.1, 0.55, 0.95, 0.9)
 
+    local titleBg = f:CreateTexture(nil, "BACKGROUND")
+    titleBg:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
+    titleBg:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -1)
+    titleBg:SetHeight(22)
+    titleBg:SetTexture("Interface\\BUTTONS\\WHITE8X8")
+    titleBg:SetVertexColor(0.05, 0.14, 0.24, 0.9)
+
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("TOP", 0, -8)
+    title:SetPoint("CENTER", titleBg, "CENTER", 0, -1)
     title:SetText("Frame Inspector")
     f.title = title
 
@@ -194,7 +201,7 @@ local function ensureInspectorFrame()
     local parentPointDrop = CreateFrame("Frame", "DragonUIInspectorParentPointDrop", f, "UIDropDownMenuTemplate")
     parentPointDrop:SetPoint("TOPLEFT", anchorParentPointLabel, "BOTTOMLEFT", -14, -2)
 
-    local helperLabel = makeLabel("Anchor Helpers", -158)
+    local helperLabel = makeLabel("Anchor Helpers (Alt+Click to pick frame under cursor)", -158)
     local helperContainer = CreateFrame("Frame", nil, f)
     helperContainer:SetSize(220, 22)
     helperContainer:SetPoint("TOPLEFT", helperLabel, "BOTTOMLEFT", 0, -4)
@@ -297,6 +304,13 @@ local function refreshInspector(entryName, entry)
     UIDropDownMenu_SetText(inspectorFrame.parentPointDrop, pos.anchorParentPoint or pos.anchor or "CENTER")
     if addon.db and addon.db.profile and addon.db.profile.editmode then
         presetNameBox:SetText(addon.db.profile.editmode.selectedPreset or "")
+    end
+    -- Default preset indicator
+    if addon.db and addon.db.profile and addon.db.profile.editmode then
+        local def = addon.db.profile.editmode.defaultPresetName or "Default"
+        if def ~= "" then
+            inspectorFrame.title:SetText((entryName or "Frame Inspector") .. " | Default: " .. def)
+        end
     end
 
     -- Orientation dropdown only meaningful for action bars
@@ -427,9 +441,11 @@ local function wireInspectorHandlers()
                     if focus and focus.GetName and focus:GetName() then
                         pos.anchorParent = focus:GetName()
                         pos.anchorParentPoint = pos.anchorParentPoint or "CENTER"
+                        print("|cFF00FF00[DragonUI]|r Anchored to cursor frame: " .. pos.anchorParent)
                     else
                         pos.anchorParent = "UIParent"
                         pos.anchorParentPoint = "CENTER"
+                        print("|cFFFFA500[DragonUI]|r Cursor pick invalid, using UIParent.")
                     end
                 else
                     pos.anchorParent = info.value
@@ -551,6 +567,44 @@ local function wireInspectorHandlers()
             }
             StaticPopup_Show("DRAGONUI_DELETE_PRESET")
         end
+    end)
+
+    -- Rename preset
+    local renamePreset = CreateFrame("Button", nil, inspectorFrame, "UIPanelButtonTemplate")
+    renamePreset:SetSize(70, 20)
+    renamePreset:SetPoint("RIGHT", deletePreset, "LEFT", -6, 0)
+    renamePreset:SetText("Rename")
+    renamePreset:SetScript("OnClick", function()
+        if not addon.db or not addon.db.profile or not addon.db.profile.editmode then return end
+        local selected = addon.db.profile.editmode.selectedPreset
+        local presets = addon.db.profile.editmode.presets or {}
+        local newName = presetNameBox:GetText()
+        if selected and presets[selected] and newName and newName ~= "" and newName ~= selected then
+            presets[newName] = presets[selected]
+            presets[selected] = nil
+            addon.db.profile.editmode.selectedPreset = newName
+            refreshPresetDropdown()
+        end
+    end)
+
+    -- Revert to default (frame defaults)
+    local revertDefault = CreateFrame("Button", nil, inspectorFrame, "UIPanelButtonTemplate")
+    revertDefault:SetSize(90, 20)
+    revertDefault:SetPoint("RIGHT", renamePreset, "LEFT", -6, 0)
+    revertDefault:SetText("Revert Default")
+    revertDefault:SetScript("OnClick", function()
+        if not activeMover then return end
+        local name, entry = findMoverEntryByFrame(activeMover)
+        if not entry or not entry.defaults then return end
+        applyPosition(name, entry, {
+            anchor = entry.defaults.anchor or "CENTER",
+            anchorParent = entry.defaults.anchorParent or "UIParent",
+            anchorParentPoint = entry.defaults.anchorParentPoint or entry.defaults.anchor or "CENTER",
+            x = entry.defaults.posX or entry.defaults.x or 0,
+            y = entry.defaults.posY or entry.defaults.y or 0,
+            scale = entry.defaults.scale or 1
+        })
+        refreshInspector(name, entry)
     end)
 end
 
