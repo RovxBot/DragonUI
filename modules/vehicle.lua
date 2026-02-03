@@ -386,6 +386,7 @@ local function RestoreOriginalPage()
     if originalPage and ChangeActionBarPage then
         ChangeActionBarPage(originalPage)
     end
+    originalPage = nil
 end
 
 local function SetupVehicleExitButton()
@@ -521,7 +522,7 @@ local function SetupVehicleExitStateDriver()
             vehicleExit:Hide()
         end
     ]])
-    RegisterStateDriver(pUiMainBar, 'vehicle', '[bonusbar:5] 1; 0')
+    RegisterStateDriver(pUiMainBar, 'vehicle', '[overridebar][possessbar][shapeshift][bonusbar:5] 1; 0')
 end
 local function ApplyVehicleSystem()
     if VehicleModule.applied or not IsModuleEnabled() then return end
