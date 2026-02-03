@@ -8,6 +8,9 @@ local addon = select(2, ...);
 --  CREAR MÓDULO USANDO EL SISTEMA DE DRAGONUI
 local BuffFrameModule = {}
 addon.BuffFrameModule = BuffFrameModule
+addon.RefreshBuffFrame = addon.RefreshBuffFrame or function()
+    if addon.BuffsModule then addon.BuffsModule:Refresh() end
+end
 
 --  VARIABLES LOCALES
 local buffFrame = nil

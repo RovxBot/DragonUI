@@ -20,6 +20,7 @@
     
     <!-- Buffs, Minimap & Quest Tracker modules -->
     <Script file="BuffFrame.lua"/> 
+    <Script file="buffs.lua"/> 
     <Script file="minimap.lua"/>    
     <Script file="questtracker.lua"/>   
  

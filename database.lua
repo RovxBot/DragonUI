@@ -93,6 +93,64 @@ local defaults = {
             }
         },
 
+        buffs = {
+            anchor = "TOPRIGHT",
+            anchorParent = "TOPRIGHT",
+            posX = -250,
+            posY = -6,
+            scale = 1,
+            paddingX = 5,
+            paddingY = 14,
+            wrapAfter = 12,
+            maxWraps = 4,
+            point = "TOPRIGHT",
+            growth = "DOWN", -- UP/DOWN
+            orientation = "RL", -- RL/LR
+            separateOwn = "0",
+            sortMethod = "INDEX",
+            sortDirection = "+",
+            hideDurationText = false,
+            hideCooldownSwipe = false,
+            hideCooldownText = true,
+            alphaNormal = 1.0,
+            alphaCombat = 1.0,
+            hideCombat = false,
+            hideVehicle = false,
+            hidePet = false,
+            hideStance = false,
+            hideStealth = false,
+            hideCustom = false,
+            hideCustomCond = ""
+        },
+        debuffs = {
+            anchor = "TOPRIGHT",
+            anchorParent = "TOPRIGHT",
+            posX = -250,
+            posY = -140,
+            scale = 1,
+            paddingX = 5,
+            paddingY = 14,
+            wrapAfter = 10,
+            maxWraps = 2,
+            point = "TOPRIGHT",
+            growth = "DOWN",
+            orientation = "RL",
+            separateOwn = "0",
+            sortMethod = "INDEX",
+            sortDirection = "+",
+            hideDurationText = false,
+            hideCooldownSwipe = false,
+            hideCooldownText = true,
+            alphaNormal = 1.0,
+            alphaCombat = 1.0,
+            hideCombat = false,
+            hideVehicle = false,
+            hidePet = false,
+            hideStance = false,
+            hideStealth = false,
+            hideCustom = false,
+            hideCustomCond = ""
+        },
         -- Edit Mode settings
         editmode = {
             showGrid = true,
@@ -474,6 +532,9 @@ local defaults = {
             keybinding = {
                 enabled = true, -- Enable LibKeyBound integration for intuitive keybinding (hover + key press)
                 auto_register_action_buttons = true -- Automatically make action buttons bindable
+            },
+            buffs = {
+                enabled = true
             }
         }
     }
