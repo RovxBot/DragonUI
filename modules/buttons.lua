@@ -110,11 +110,13 @@ end
 
 local function StyleFlyout(button)
     if not button or not button.FlyoutArrow or not button.FlyoutBorder then return end
-    button.FlyoutBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    button.FlyoutBorder:SetTexture("Interface\\Buttons\\ActionBarFlyoutButton")
     button.FlyoutBorder:SetBlendMode("ADD")
     if button.FlyoutBorderShadow then
-        button.FlyoutBorderShadow:SetTexture(nil)
+        button.FlyoutBorderShadow:SetTexture("Interface\\Buttons\\ActionBarFlyoutButtonShadow")
     end
+    -- Resize flyout arrow for DF look
+    button.FlyoutArrow:SetSize(24, 24)
 end
 
 local function HookFlyoutUpdates()
