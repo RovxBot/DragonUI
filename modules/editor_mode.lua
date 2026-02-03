@@ -15,6 +15,13 @@ local activeHighlight = nil;
 local keyCatcher = nil;
 local presetDropdown = nil;
 local presetNameBox = nil;
+local helperButtons = {};
+local helperFrames = {
+    { label = "UIParent", value = "UIParent" },
+    { label = "Target", value = "TargetFrame" },
+    { label = "Focus", value = "FocusFrame" },
+    { label = "Pick Cursor", value = "cursor" },
+}
 local function getPresetStore()
     if not addon.db or not addon.db.profile then return nil end
     addon.db.profile.editmode = addon.db.profile.editmode or {}
@@ -187,6 +194,24 @@ local function ensureInspectorFrame()
     local parentPointDrop = CreateFrame("Frame", "DragonUIInspectorParentPointDrop", f, "UIDropDownMenuTemplate")
     parentPointDrop:SetPoint("TOPLEFT", anchorParentPointLabel, "BOTTOMLEFT", -14, -2)
 
+    local helperLabel = makeLabel("Anchor Helpers", -158)
+    local helperContainer = CreateFrame("Frame", nil, f)
+    helperContainer:SetSize(220, 22)
+    helperContainer:SetPoint("TOPLEFT", helperLabel, "BOTTOMLEFT", 0, -4)
+    local last
+    for i, info in ipairs(helperFrames) do
+        local btn = CreateFrame("Button", nil, helperContainer, "UIPanelButtonTemplate")
+        btn:SetSize(70, 20)
+        btn:SetText(info.label)
+        if not last then
+            btn:SetPoint("LEFT", helperContainer, "LEFT", 0, 0)
+        else
+            btn:SetPoint("LEFT", last, "RIGHT", 4, 0)
+        end
+        helperButtons[#helperButtons + 1] = btn
+        last = btn
+    end
+
     local xLabel = makeLabel("X", -208)
     local xSlider = CreateFrame("Slider", "DragonUIInspectorX", f, "OptionsSliderTemplate")
     xSlider:SetPoint("TOPLEFT", xLabel, "BOTTOMLEFT", 0, -6)
@@ -248,6 +273,7 @@ local function ensureInspectorFrame()
     f.revertBtn = revertBtn
     f.saveBtn = saveBtn
     f.presetDropdown = presetDropdown
+    f.helperButtons = helperButtons
     f.anchorLabel = anchorLabel
 
     inspectorFrame = f
@@ -468,6 +494,23 @@ local function wireInspectorHandlers()
         addon.db.profile.editmode.selectedPreset = presetName
         refreshPresetDropdown()
     end)
+
+    -- Delete preset
+    local deletePreset = CreateFrame("Button", nil, inspectorFrame, "UIPanelButtonTemplate")
+    deletePreset:SetSize(70, 20)
+    deletePreset:SetPoint("RIGHT", inspectorFrame.closeBtn or inspectorFrame.saveBtn, "LEFT", -6, 0)
+    deletePreset:SetText("Delete")
+    deletePreset:SetScript("OnClick", function()
+        if not addon.db or not addon.db.profile or not addon.db.profile.editmode then return end
+        local selected = addon.db.profile.editmode.selectedPreset
+        local presets = addon.db.profile.editmode.presets or {}
+        if selected and presets[selected] then
+            presets[selected] = nil
+            addon.db.profile.editmode.selectedPreset = ""
+            presetNameBox:SetText("")
+            refreshPresetDropdown()
+        end
+    end)
 end
 
 --  BOTÓN DE RESET ALL POSITIONS - ESTILO PROFESIONAL
@@ -604,16 +647,16 @@ function EditorMode:UpdateGridSize(size)
     end
 end
 
-function EditorMode:UpdateGridVisibility()
-    if not gridOverlay then
-        createGridOverlay()
+    function EditorMode:UpdateGridVisibility()
+        if not gridOverlay then
+            createGridOverlay()
+        end
+        if addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.showGrid then
+            UIFrameFadeIn(gridOverlay, 0.08, gridOverlay:GetAlpha(), 1)
+        else
+            UIFrameFadeOut(gridOverlay, 0.08, gridOverlay:GetAlpha(), 0)
+        end
     end
-    if addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.showGrid then
-        gridOverlay:Show()
-    else
-        gridOverlay:Hide()
-    end
-end
 
 function EditorMode:Show()
     if InCombatLockdown() then
@@ -710,7 +753,7 @@ function EditorMode:Hide(showReloadPopup)
     end
     if exitEditorButton then exitEditorButton:Hide() end
     if resetAllButton then resetAllButton:Hide() end
-    if inspectorFrame then inspectorFrame:Hide() end
+    if inspectorFrame then UIFrameFadeOut(inspectorFrame, 0.1, inspectorFrame:GetAlpha(), 0) end
     if activeHighlight then
         UIFrameFadeOut(activeHighlight, 0.1, activeHighlight:GetAlpha(), 0)
     end

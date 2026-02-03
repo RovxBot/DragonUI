@@ -110,15 +110,23 @@ function MoverSystem:ApplyPosition(name)
     if not cfg then return end
 
     local anchor = cfg.anchor or cfg.anchorPoint or "CENTER"
-    local anchorParent = cfg.anchorParent or "CENTER"
+    local anchorParent = cfg.anchorParent or "UIParent"
+    local parentFrame = _G[anchorParent] or UIParent
+    if not _G[anchorParent] and cfg then
+        cfg.anchorParent = "UIParent"
+    end
     local anchorParentPoint = cfg.anchorParentPoint or anchor
     local x = cfg.posX or cfg.x or 0
     local y = cfg.posY or cfg.y or 0
     local scale = cfg.scale or entry.frame:GetScale() or 1
 
     entry.frame:ClearAllPoints()
-    entry.frame:SetPoint(anchor, _G[anchorParent] or UIParent, anchorParentPoint, x, y)
+    entry.frame:SetPoint(anchor, parentFrame, anchorParentPoint, x, y)
     entry.frame:SetScale(scale)
+
+    if entry.onApplied then
+        pcall(entry.onApplied, entry.frame, cfg)
+    end
 end
 
 function MoverSystem:ApplyAll()
