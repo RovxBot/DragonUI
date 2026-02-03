@@ -544,6 +544,10 @@ local function SetupVehicleExitStateDriver()
 end
 local function ApplyVehicleSystem()
     if VehicleModule.applied or not IsModuleEnabled() then return end
+    if not ForceArtEnabled() then
+        -- Respect user choice to keep Blizzard vehicle UI untouched
+        return
+    end
 
     -- Check dependencies
     if not CheckDependencies() then

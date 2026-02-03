@@ -111,6 +111,34 @@ local function SnapToNearestGuide(frame)
     local bestDx, bestDy = 0, 0
     local bestDistX, bestDistY = stickyThreshold + 1, stickyThreshold + 1
 
+    -- Snap to parent guides
+    local pLeft, pRight, pTop, pBottom = UIParent:GetLeft(), UIParent:GetRight(), UIParent:GetTop(), UIParent:GetBottom()
+    local pCx, pCy = UIParent:GetCenter()
+    if pCx then
+        local dx = pCx - fx
+        if math.abs(dx) < bestDistX then bestDistX = math.abs(dx); bestDx = dx end
+    end
+    if pCy then
+        local dy = pCy - fy
+        if math.abs(dy) < bestDistY then bestDistY = math.abs(dy); bestDy = dy end
+    end
+    if pLeft then
+        local dl = pLeft - fLeft
+        if math.abs(dl) < bestDistX then bestDistX = math.abs(dl); bestDx = dl end
+    end
+    if pRight then
+        local dr = pRight - fRight
+        if math.abs(dr) < bestDistX then bestDistX = math.abs(dr); bestDx = dr end
+    end
+    if pTop then
+        local dt = pTop - fTop
+        if math.abs(dt) < bestDistY then bestDistY = math.abs(dt); bestDy = dt end
+    end
+    if pBottom then
+        local db = pBottom - fBottom
+        if math.abs(db) < bestDistY then bestDistY = math.abs(db); bestDy = db end
+    end
+
     -- Check guides from other movers
     for name, entry in pairs(addon.MoverSystem and addon.MoverSystem.movers or {}) do
         if entry.frame and entry.frame ~= frame and entry.frame:IsShown() then
