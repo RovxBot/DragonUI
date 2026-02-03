@@ -73,6 +73,41 @@ addon.buttons_iterator = function()
 end
 
 -- ============================================================================
+-- VISUAL STYLING HELPERS (hover/press/flyout)
+-- ============================================================================
+
+local function ApplyButtonVisuals(button)
+    if not button then return end
+    local assets = addon.config.assets
+    if assets and assets.highlight then
+        button:SetHighlightTexture(assets.highlight)
+    end
+    if assets and assets.normal then
+        local nt = button:GetNormalTexture()
+        if nt then
+            nt:SetTexture(assets.normal)
+        end
+    end
+end
+
+local function StyleFlyout(button)
+    if not button or not button.FlyoutArrow or not button.FlyoutBorder then return end
+    button.FlyoutBorder:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    button.FlyoutBorder:SetBlendMode("ADD")
+    if button.FlyoutBorderShadow then
+        button.FlyoutBorderShadow:SetTexture(nil)
+    end
+end
+
+local function HookFlyoutUpdates()
+    if ButtonsModule.flyoutHooked then return end
+    ButtonsModule.flyoutHooked = true
+    hooksecurefunc("ActionButton_UpdateFlyout", function(btn)
+        StyleFlyout(btn)
+    end)
+end
+
+-- ============================================================================
 -- UTILITY FUNCTIONS
 -- ============================================================================
 
@@ -112,8 +147,19 @@ function addon.actionbuttons_grid()
         local button = _G[format('ActionButton%d', index)]
         if button then
             handleActionButton(button, wowAlwaysShow)
+            ApplyButtonVisuals(button)
         end
     end
+
+    -- Apply styling to secondary bars
+    for _, name in ipairs(actionbars) do
+        for i = 1, 12 do
+            local btn = _G[name..i]
+            ApplyButtonVisuals(btn)
+        end
+    end
+
+    HookFlyoutUpdates()
 end
 
 local function is_petaction(self, name)
