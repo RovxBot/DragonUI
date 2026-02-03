@@ -208,9 +208,11 @@ local function ensureInspectorFrame()
         else
             btn:SetPoint("LEFT", last, "RIGHT", 4, 0)
         end
-        helperButtons[#helperButtons + 1] = btn
+    helperButtons[#helperButtons + 1] = btn
         last = btn
     end
+    helperContainer.buttons = helperButtons
+    f.helperContainer = helperContainer
 
     local xLabel = makeLabel("X", -208)
     local xSlider = CreateFrame("Slider", "DragonUIInspectorX", f, "OptionsSliderTemplate")
@@ -411,6 +413,34 @@ local function wireInspectorHandlers()
     initOrientationDropdown(inspectorFrame.orientationDrop)
     refreshPresetDropdown()
 
+    -- Wire helper buttons
+    if inspectorFrame.helperContainer and inspectorFrame.helperContainer.buttons then
+        for idx, btn in ipairs(inspectorFrame.helperContainer.buttons) do
+            local info = helperFrames[idx]
+            btn:SetScript("OnClick", function()
+                if not activeMover then return end
+                local name, entry = findMoverEntryByFrame(activeMover)
+                if not entry then return end
+                local pos = getCurrentPosition(entry)
+                if info.value == "cursor" then
+                    local focus = GetMouseFocus()
+                    if focus and focus.GetName and focus:GetName() then
+                        pos.anchorParent = focus:GetName()
+                        pos.anchorParentPoint = pos.anchorParentPoint or "CENTER"
+                    else
+                        pos.anchorParent = "UIParent"
+                        pos.anchorParentPoint = "CENTER"
+                    end
+                else
+                    pos.anchorParent = info.value
+                    pos.anchorParentPoint = "CENTER"
+                end
+                applyPosition(name, entry, pos)
+                refreshInspector(name, entry)
+            end)
+        end
+    end
+
     inspectorFrame.parentBox:SetScript("OnEnterPressed", function(self)
         self:ClearFocus()
         if activeMover then
@@ -505,10 +535,21 @@ local function wireInspectorHandlers()
         local selected = addon.db.profile.editmode.selectedPreset
         local presets = addon.db.profile.editmode.presets or {}
         if selected and presets[selected] then
-            presets[selected] = nil
-            addon.db.profile.editmode.selectedPreset = ""
-            presetNameBox:SetText("")
-            refreshPresetDropdown()
+            StaticPopupDialogs["DRAGONUI_DELETE_PRESET"] = {
+                text = "Delete preset '" .. selected .. "'?",
+                button1 = "Yes",
+                button2 = "No",
+                OnAccept = function()
+                    presets[selected] = nil
+                    addon.db.profile.editmode.selectedPreset = ""
+                    presetNameBox:SetText("")
+                    refreshPresetDropdown()
+                end,
+                timeout = 0,
+                whileDead = true,
+                hideOnEscape = true,
+            }
+            StaticPopup_Show("DRAGONUI_DELETE_PRESET")
         end
     end)
 end
@@ -785,6 +826,10 @@ end
 function EditorMode:SetActiveMover(frame)
     if not frame then return end
     activeMover = frame
+    if inspectorFrame then
+        inspectorFrame:SetAlpha(1)
+        inspectorFrame.fadeOut = nil
+    end
     if not inspectorFrame then
         ensureInspectorFrame()
         wireInspectorHandlers()
