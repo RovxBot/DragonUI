@@ -28,6 +28,7 @@ local vehicleBarBackground = nil;
 local vehiclebar = nil;
 local vehicleExit = nil;
 local vehicleLeave = nil;
+local originalPage = nil;
 
 -- ============================================================================
 -- CONFIGURATION FUNCTIONS
@@ -116,6 +117,7 @@ local function CreateVehicleFrames()
     vehiclebar:Hide()
     vehicleExit:Hide()
     vehicleLeave:Hide()
+    RestoreOriginalPage()
     
     -- Store frames for cleanup
     VehicleModule.frames = {
@@ -373,6 +375,19 @@ local function SetupVehicleLeaveButton()
     RegisterStateDriver(vehicleLeave, 'visibility', '[vehicleui][target=vehicle,noexists] hide;show')
 end
 
+local function CaptureOriginalPage()
+    if InCombatLockdown() then return end
+    if not pUiMainBar then return end
+    originalPage = GetActionBarPage and GetActionBarPage() or nil
+end
+
+local function RestoreOriginalPage()
+    if InCombatLockdown() then return end
+    if originalPage and ChangeActionBarPage then
+        ChangeActionBarPage(originalPage)
+    end
+end
+
 local function SetupVehicleExitButton()
     if not vehicleExit or not pUiMainBar then return end
     
@@ -524,6 +539,9 @@ local function ApplyVehicleSystem()
         return
     end
     
+    -- Capture current page to restore after vehicle
+    CaptureOriginalPage()
+
     -- Setup based on art style
     if config.additional.vehicle.artstyle then
         -- Register events
