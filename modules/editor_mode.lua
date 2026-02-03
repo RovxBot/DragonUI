@@ -16,6 +16,60 @@ local keyCatcher = nil;
 local presetDropdown = nil;
 local presetNameBox = nil;
 local helperButtons = {};
+local snapLines = {}
+
+local function SafeFadeIn(frame, duration, toAlpha)
+    if not frame then return end
+    if UIFrameFadeRemoveFrame then UIFrameFadeRemoveFrame(frame) end
+    UIFrameFadeIn(frame, duration or 0.1, frame:GetAlpha() or 0, toAlpha or 1)
+end
+
+function EditorMode:ShowMoverGuides()
+    for _, line in pairs(snapLines) do line:Hide() end
+    wipe(snapLines)
+    if not activeMover or not addon.MoverSystem then return end
+    local activeName, activeEntry = findMoverEntryByFrame(activeMover)
+    if not activeEntry then return end
+
+    local parent = UIParent
+    local _, _, _, ax, ay = activeMover:GetPoint()
+    local activeCX, activeCY = activeMover:GetCenter()
+
+    for name, entry in pairs(addon.MoverSystem.movers) do
+        if entry.frame and entry.frame:IsShown() and name ~= activeName then
+            local cx, cy = entry.frame:GetCenter()
+            if cx and cy then
+                local v = parent:CreateTexture(nil, "OVERLAY")
+                v:SetTexture(0, 0.8, 1, 0.25)
+                v:SetPoint("TOP", parent, "TOP", cx - (parent:GetLeft() or 0), 0)
+                v:SetPoint("BOTTOM", parent, "BOTTOM", cx - (parent:GetLeft() or 0), 0)
+                v:SetWidth(1)
+                v:SetBlendMode("ADD")
+
+                local h = parent:CreateTexture(nil, "OVERLAY")
+                h:SetTexture(0, 0.8, 1, 0.25)
+                h:SetPoint("LEFT", parent, "LEFT", 0, cy - (parent:GetBottom() or 0))
+                h:SetPoint("RIGHT", parent, "RIGHT", 0, cy - (parent:GetBottom() or 0))
+                h:SetHeight(1)
+                h:SetBlendMode("ADD")
+
+                table.insert(snapLines, v)
+                table.insert(snapLines, h)
+            end
+        end
+    end
+
+    C_Timer.After(0.6, function()
+        for _, line in pairs(snapLines) do line:Hide() end
+        wipe(snapLines)
+    end)
+end
+
+local function SafeFadeOut(frame, duration, toAlpha)
+    if not frame then return end
+    if UIFrameFadeRemoveFrame then UIFrameFadeRemoveFrame(frame) end
+    UIFrameFadeOut(frame, duration or 0.1, frame:GetAlpha() or 1, toAlpha or 0)
+end
 local helperFrames = {
     { label = "UIParent", value = "UIParent" },
     { label = "Target", value = "TargetFrame" },
@@ -782,9 +836,9 @@ end
             createGridOverlay()
         end
         if addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.showGrid then
-            UIFrameFadeIn(gridOverlay, 0.08, gridOverlay:GetAlpha(), 1)
+            SafeFadeIn(gridOverlay, 0.08, 1)
         else
-            UIFrameFadeOut(gridOverlay, 0.08, gridOverlay:GetAlpha(), 0)
+            SafeFadeOut(gridOverlay, 0.08, 0)
         end
     end
 
@@ -879,13 +933,13 @@ end
 
 function EditorMode:Hide(showReloadPopup)
     if gridOverlay then
-        UIFrameFadeOut(gridOverlay, 0.08, gridOverlay:GetAlpha(), 0)
+        SafeFadeOut(gridOverlay, 0.08, 0)
     end
     if exitEditorButton then exitEditorButton:Hide() end
     if resetAllButton then resetAllButton:Hide() end
-    if inspectorFrame then UIFrameFadeOut(inspectorFrame, 0.1, inspectorFrame:GetAlpha(), 0) end
+    if inspectorFrame then SafeFadeOut(inspectorFrame, 0.1, 0) end
     if activeHighlight then
-        UIFrameFadeOut(activeHighlight, 0.08, activeHighlight:GetAlpha(), 0)
+        SafeFadeOut(activeHighlight, 0.08, 0)
     end
     if keyCatcher then keyCatcher:Hide() end
     activeMover = nil
@@ -925,7 +979,7 @@ function EditorMode:SetActiveMover(frame)
     end
     local name, entry = findMoverEntryByFrame(frame)
     if entry then
-        UIFrameFadeIn(inspectorFrame, 0.1, inspectorFrame:GetAlpha(), 1)
+        SafeFadeIn(inspectorFrame, 0.1, 1)
         refreshInspector(name, entry)
         inspectorLinkedLayoutKey = nil
         -- If this mover matches an action bar, remember which layout to adjust for orientation later
@@ -946,11 +1000,20 @@ function EditorMode:SetActiveMover(frame)
                 activeHighlight.text = activeHighlight:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                 activeHighlight.text:SetPoint("TOP", activeHighlight, "BOTTOM", 0, -2)
             end
+            if not activeHighlight.glow then
+                activeHighlight.glow = activeHighlight:CreateTexture(nil, "ARTWORK")
+                activeHighlight.glow:SetTexture("Interface\\FullScreenTextures\\OutOfControl")
+                activeHighlight.glow:SetBlendMode("ADD")
+                activeHighlight.glow:SetAllPoints(activeHighlight)
+                activeHighlight.glow:SetAlpha(0.4)
+            end
             activeHighlight.text:SetText(name or "")
             activeHighlight:SetBackdrop({ edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize = 14 })
             activeHighlight:SetBackdropBorderColor(0.1, 0.8, 1, 0.9)
-            UIFrameFadeIn(activeHighlight, 0.08, activeHighlight:GetAlpha(), 0.6)
+            SafeFadeIn(activeHighlight, 0.08, 0.6)
         end
+
+        self:ShowMoverGuides()
     end
 end
 
@@ -1141,4 +1204,3 @@ local function refreshPresetDropdown()
         end
     end)
 end
-local snapLines = {}
