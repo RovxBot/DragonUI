@@ -17,6 +17,8 @@ local presetDropdown = nil;
 local presetNameBox = nil;
 local helperButtons = {};
 local snapLines = {}
+local stickySnapping = true
+local stickyThreshold = 8
 
 local function SafeFadeIn(frame, duration, toAlpha)
     if not frame then return end
@@ -97,6 +99,69 @@ function EditorMode:ShowMoverGuides()
         for _, line in pairs(snapLines) do line:Hide() end
         wipe(snapLines)
     end)
+end
+
+local function SnapToNearestGuide(frame)
+    if not stickySnapping then return end
+    if not frame then return end
+    local fx, fy = frame:GetCenter()
+    if not fx or not fy then return end
+    local bestDx, bestDy = 0, 0
+    local bestDistX, bestDistY = stickyThreshold + 1, stickyThreshold + 1
+
+    -- Check guides from other movers
+    for name, entry in pairs(addon.MoverSystem and addon.MoverSystem.movers or {}) do
+        if entry.frame and entry.frame ~= frame and entry.frame:IsShown() then
+            local cx, cy = entry.frame:GetCenter()
+            local left = entry.frame:GetLeft()
+            local right = entry.frame:GetRight()
+            local top = entry.frame:GetTop()
+            local bottom = entry.frame:GetBottom()
+            if cx then
+                local dx = cx - fx
+                if math.abs(dx) < bestDistX then
+                    bestDistX = math.abs(dx)
+                    bestDx = dx
+                end
+            end
+            if left and right then
+                local dl = left - frame:GetLeft()
+                if math.abs(dl) < bestDistX then
+                    bestDistX = math.abs(dl)
+                    bestDx = dl
+                end
+                local dr = right - frame:GetRight()
+                if math.abs(dr) < bestDistX then
+                    bestDistX = math.abs(dr)
+                    bestDx = dr
+                end
+            end
+            if cy then
+                local dy = cy - fy
+                if math.abs(dy) < bestDistY then
+                    bestDistY = math.abs(dy)
+                    bestDy = dy
+                end
+            end
+            if top and bottom then
+                local dt = top - frame:GetTop()
+                if math.abs(dt) < bestDistY then
+                    bestDistY = math.abs(dt)
+                    bestDy = dt
+                end
+                local db = bottom - frame:GetBottom()
+                if math.abs(db) < bestDistY then
+                    bestDistY = math.abs(db)
+                    bestDy = db
+                end
+            end
+        end
+    end
+
+    if math.abs(bestDx) <= stickyThreshold or math.abs(bestDy) <= stickyThreshold then
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", (frame:GetLeft() or 0) + (frame:GetWidth() / 2) + bestDx, (frame:GetBottom() or 0) + (frame:GetHeight() / 2) + bestDy)
+    end
 end
 
 local function SafeFadeOut(frame, duration, toAlpha)
@@ -1049,6 +1114,10 @@ function EditorMode:SetActiveMover(frame)
 
         self:ShowMoverGuides()
     end
+end
+
+function EditorMode:SnapToNearestGuide(frame)
+    SnapToNearestGuide(frame)
 end
 
 function EditorMode:RefreshOptionsUI()

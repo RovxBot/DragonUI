@@ -437,6 +437,10 @@ function CreateUIFrame(width, height, frameName)
         if self.editorHeader and self.editorHeader.coords then
             self.editorHeader.coords:SetText(string.format("x:%d y:%d", x or 0, y or 0))
         end
+
+        if addon.EditorMode and addon.EditorMode.SnapToNearestGuide then
+            addon.EditorMode:SnapToNearestGuide(self)
+        end
     end)
 
     return frame
