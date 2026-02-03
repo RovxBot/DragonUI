@@ -13,6 +13,8 @@ local activeMover = nil;
 local inspectorLinkedLayoutKey = nil; -- for action bars orientation/scale
 local activeHighlight = nil;
 local keyCatcher = nil;
+local presetDropdown = nil;
+local presetNameBox = nil;
 local function getPresetStore()
     if not addon.db or not addon.db.profile then return nil end
     addon.db.profile.editmode = addon.db.profile.editmode or {}
@@ -147,12 +149,12 @@ local function ensureInspectorFrame()
 
     f:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true, tileSize = 16, edgeSize = 14,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        edgeFile = "Interface\\Buttons\\WHITE8X8",
+        tile = true, tileSize = 16, edgeSize = 1,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 }
     })
-    f:SetBackdropColor(0.03, 0.05, 0.08, 0.92)
-    f:SetBackdropBorderColor(0.2, 0.6, 1, 0.9)
+    f:SetBackdropColor(0.02, 0.04, 0.08, 0.94)
+    f:SetBackdropBorderColor(0.1, 0.55, 0.95, 0.9)
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     title:SetPoint("TOP", 0, -8)
@@ -210,14 +212,23 @@ local function ensureInspectorFrame()
     resetBtn:SetPoint("BOTTOMLEFT", 12, 10)
     resetBtn:SetText("Reset")
 
+    presetNameBox = CreateFrame("EditBox", "DragonUIPresetNameBox", f, "InputBoxTemplate")
+    presetNameBox:SetSize(100, 18)
+    presetNameBox:SetPoint("LEFT", resetBtn, "RIGHT", 6, 0)
+    presetNameBox:SetAutoFocus(false)
+    presetNameBox:SetText(addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.selectedPreset or "")
+
     local revertBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     revertBtn:SetSize(70, 20)
-    revertBtn:SetPoint("LEFT", resetBtn, "RIGHT", 6, 0)
+    revertBtn:SetPoint("LEFT", presetNameBox, "RIGHT", 6, 0)
     revertBtn:SetText("Revert")
+
+    presetDropdown = CreateFrame("Frame", "DragonUIPresetDropdown", f, "UIDropDownMenuTemplate")
+    presetDropdown:SetPoint("LEFT", revertBtn, "RIGHT", -4, -2)
 
     local saveBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
     saveBtn:SetSize(70, 20)
-    saveBtn:SetPoint("LEFT", revertBtn, "RIGHT", 6, 0)
+    saveBtn:SetPoint("LEFT", presetDropdown, "RIGHT", -12, 2)
     saveBtn:SetText("Save")
 
     local closeBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
@@ -236,6 +247,7 @@ local function ensureInspectorFrame()
     f.resetBtn = resetBtn
     f.revertBtn = revertBtn
     f.saveBtn = saveBtn
+    f.presetDropdown = presetDropdown
     f.anchorLabel = anchorLabel
 
     inspectorFrame = f
@@ -255,6 +267,9 @@ local function refreshInspector(entryName, entry)
     inspectorFrame.scaleSlider:SetValue(pos.scale or 1)
     UIDropDownMenu_SetSelectedValue(inspectorFrame.parentPointDrop, pos.anchorParentPoint or pos.anchor or "CENTER")
     UIDropDownMenu_SetText(inspectorFrame.parentPointDrop, pos.anchorParentPoint or pos.anchor or "CENTER")
+    if addon.db and addon.db.profile and addon.db.profile.editmode then
+        presetNameBox:SetText(addon.db.profile.editmode.selectedPreset or "")
+    end
 
     -- Orientation dropdown only meaningful for action bars
     if inspectorLinkedLayoutKey and addon.db and addon.db.profile and addon.db.profile.mainbars and addon.db.profile.mainbars.layout then
@@ -368,6 +383,7 @@ local function wireInspectorHandlers()
     initAnchorDropdown(inspectorFrame.anchorDrop)
     initParentPointDropdown(inspectorFrame.parentPointDrop)
     initOrientationDropdown(inspectorFrame.orientationDrop)
+    refreshPresetDropdown()
 
     inspectorFrame.parentBox:SetScript("OnEnterPressed", function(self)
         self:ClearFocus()
@@ -430,7 +446,8 @@ local function wireInspectorHandlers()
         if not store then return end
         local name, entry = findMoverEntryByFrame(activeMover)
         if not entry then return end
-        local preset = store[name]
+        local selected = addon.db.profile.editmode.selectedPreset
+        local preset = selected and store[selected] or store[name]
         if preset then
             applyPosition(name, entry, preset)
             refreshInspector(name, entry)
@@ -443,7 +460,13 @@ local function wireInspectorHandlers()
         if not store then return end
         local name, entry = findMoverEntryByFrame(activeMover)
         if not entry then return end
-        store[name] = getCurrentPosition(entry)
+        local presetName = presetNameBox:GetText()
+        if not presetName or presetName == "" then
+            presetName = name
+        end
+        store[presetName] = getCurrentPosition(entry)
+        addon.db.profile.editmode.selectedPreset = presetName
+        refreshPresetDropdown()
     end)
 end
 
@@ -636,6 +659,9 @@ function EditorMode:Show()
         keyCatcher:SetFrameLevel(201)
         keyCatcher:SetScript("OnKeyDown", function(_, key)
             if not activeMover or InCombatLockdown() then return end
+            if key == "LSHIFT" or key == "RSHIFT" or key == "LCTRL" or key == "RCTRL" or key == "LALT" or key == "RALT" then
+                return
+            end
             local step = (addon.db and addon.db.profile and addon.db.profile.editmode and addon.db.profile.editmode.gridSize) or 32
             local deltaX, deltaY = 0, 0
             if key == "UP" or key == "W" then deltaY = step
@@ -679,7 +705,9 @@ end
 
 
 function EditorMode:Hide(showReloadPopup)
-    if gridOverlay then gridOverlay:Hide() end
+    if gridOverlay then
+        UIFrameFadeOut(gridOverlay, 0.1, gridOverlay:GetAlpha(), 0)
+    end
     if exitEditorButton then exitEditorButton:Hide() end
     if resetAllButton then resetAllButton:Hide() end
     if inspectorFrame then inspectorFrame:Hide() end
@@ -737,6 +765,13 @@ function EditorMode:SetActiveMover(frame)
         if activeHighlight and entry.frame then
             activeHighlight:ClearAllPoints()
             activeHighlight:SetAllPoints(entry.frame)
+            if not activeHighlight.text then
+                activeHighlight.text = activeHighlight:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                activeHighlight.text:SetPoint("TOP", activeHighlight, "BOTTOM", 0, -2)
+            end
+            activeHighlight.text:SetText(name or "")
+            activeHighlight:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
+            activeHighlight:SetBackdropBorderColor(0.1, 0.8, 1, 0.9)
             UIFrameFadeIn(activeHighlight, 0.08, activeHighlight:GetAlpha(), 0.6)
         end
     end
@@ -898,3 +933,34 @@ StaticPopupDialogs["DRAGONUI_RESET_ALL_POSITIONS"] = {
     scaleSlider:SetValueStep(0.01)
     _G[scaleSlider:GetName() .. "Low"]:SetText("0.5")
     _G[scaleSlider:GetName() .. "High"]:SetText("2.0")
+local function refreshPresetDropdown()
+    if not presetDropdown then return end
+    UIDropDownMenu_Initialize(presetDropdown, function(self, level)
+        if not addon.db or not addon.db.profile or not addon.db.profile.editmode then return end
+        local presets = addon.db.profile.editmode.presets or {}
+        local selected = addon.db.profile.editmode.selectedPreset
+        for name, _ in pairs(presets) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = name
+            info.value = name
+            info.func = function()
+                UIDropDownMenu_SetSelectedValue(presetDropdown, name)
+                UIDropDownMenu_SetText(presetDropdown, name)
+                addon.db.profile.editmode.selectedPreset = name
+                presetNameBox:SetText(name)
+                if activeMover then
+                    local moverName, entry = findMoverEntryByFrame(activeMover)
+                    if entry and presets[name] then
+                        applyPosition(moverName, entry, presets[name])
+                        refreshInspector(moverName, entry)
+                    end
+                end
+            end
+            UIDropDownMenu_AddButton(info, level)
+        end
+        if selected then
+            UIDropDownMenu_SetSelectedValue(presetDropdown, selected)
+            UIDropDownMenu_SetText(presetDropdown, selected)
+        end
+    end)
+end
