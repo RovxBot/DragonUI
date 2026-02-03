@@ -107,6 +107,34 @@ function addon:CreateOptionsTable()
                         end,
                         order = 1
                     },
+                    paging = {
+                        type = 'group',
+                        name = "Paging & State Drivers",
+                        inline = true,
+                        order = 4,
+                        args = {
+                            help = {
+                                type = 'description',
+                                name = "Configure custom state drivers for action bars. Example: [form:1]1;[form:2]2;[bonusbar:5]11;0",
+                                order = 0
+                            },
+                            custom_state_driver = {
+                                type = 'input',
+                                name = "Custom State Driver",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.custom_state_driver or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.custom_state_driver = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                    if RegisterStateDriver and MainMenuBar then
+                                        UnregisterStateDriver(MainMenuBar, "page")
+                                        RegisterStateDriver(MainMenuBar, "page", addon.db.profile.mainbars.paging.custom_state_driver)
+                                    end
+                                end,
+                                order = 1
+                            }
+                        }
+                    },
                     snap_to_grid = {
                         type = 'toggle',
                         name = "Snap to Grid",

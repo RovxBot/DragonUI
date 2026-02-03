@@ -143,10 +143,12 @@ local defaults = {
                 direction = "UP",
                 openOnHover = true,
                 closeDelay = 0.1,
-                spacing = 6
+                spacing = 6,
+                art = "df"
             },
             paging = {
-                custom_state_driver = ""
+                custom_state_driver = "",
+                class_overrides = {}
             }
         },
 

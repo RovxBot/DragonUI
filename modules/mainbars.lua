@@ -529,7 +529,7 @@ end
                 end
             end)
         end
-    end
+end
 
     function addon.PositionActionBars()
         if InCombatLockdown() then
