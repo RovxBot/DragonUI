@@ -598,7 +598,15 @@ end
             local finalDriver = classDriver and classDriver ~= "" and classDriver or driver
             if finalDriver and finalDriver ~= "" then
                 UnregisterStateDriver(MainMenuBar, "page")
-                RegisterStateDriver(MainMenuBar, "page", finalDriver)
+                -- Validate driver by attempting on a dummy frame
+                local dummy = CreateFrame("Frame", nil, UIParent, "SecureHandlerStateTemplate")
+                local ok = pcall(RegisterStateDriver, dummy, "page", finalDriver)
+                if ok then
+                    RegisterStateDriver(MainMenuBar, "page", finalDriver)
+                else
+                    print("|cFFFF0000[DragonUI]|r Invalid paging driver, reverted to default.")
+                    RegisterStateDriver(MainMenuBar, "page", "0")
+                end
             end
         end
     end

@@ -562,7 +562,7 @@ local function ApplyVehicleSystem()
     CaptureOriginalPage()
 
     -- Setup based on art style
-    if config.additional.vehicle.artstyle then
+    if ForceArtEnabled() and config.additional.vehicle.artstyle then
         -- Register events
         local events = {
             'UNIT_ENTERING_VEHICLE',

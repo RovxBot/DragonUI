@@ -106,6 +106,8 @@ local function SnapToNearestGuide(frame)
     if not frame then return end
     local fx, fy = frame:GetCenter()
     if not fx or not fy then return end
+    local fLeft, fRight, fTop, fBottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+    if not (fLeft and fRight and fTop and fBottom) then return end
     local bestDx, bestDy = 0, 0
     local bestDistX, bestDistY = stickyThreshold + 1, stickyThreshold + 1
 
@@ -159,8 +161,9 @@ local function SnapToNearestGuide(frame)
     end
 
     if math.abs(bestDx) <= stickyThreshold or math.abs(bestDy) <= stickyThreshold then
+        local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(1)
         frame:ClearAllPoints()
-        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", (frame:GetLeft() or 0) + (frame:GetWidth() / 2) + bestDx, (frame:GetBottom() or 0) + (frame:GetHeight() / 2) + bestDy)
+        frame:SetPoint(point or "CENTER", relativeTo or UIParent, relativePoint or point or "CENTER", (xOfs or 0) + bestDx, (yOfs or 0) + bestDy)
     end
 end
 
