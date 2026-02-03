@@ -118,6 +118,39 @@ function addon:CreateOptionsTable()
                                 name = "Configure custom state drivers for action bars. Example: [form:1]1;[form:2]2;[bonusbar:5]11;0",
                                 order = 0
                             },
+                            warrior = {
+                                type = 'input',
+                                name = "Warrior",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.WARRIOR or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.WARRIOR = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 0.5
+                            },
+                            rogue = {
+                                type = 'input',
+                                name = "Rogue",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.ROGUE or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.ROGUE = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 0.6
+                            },
+                            druid = {
+                                type = 'input',
+                                name = "Druid",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.DRUID or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.DRUID = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 0.7
+                            },
                             custom_state_driver = {
                                 type = 'input',
                                 name = "Custom State Driver",

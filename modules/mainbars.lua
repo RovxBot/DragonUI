@@ -590,6 +590,17 @@ end
             LayoutActionButtons("MultiBarBottomRightButton", 12, brLayout)
             ApplyBarVisibility(MultiBarBottomRight, "MultiBarBottomRightButton", 12, brLayout)
         end
+
+        -- Apply paging state drivers if provided
+        if RegisterStateDriver and not InCombatLockdown() then
+            local driver = db.paging and db.paging.custom_state_driver
+            local classDriver = db.paging and db.paging.class_overrides and db.paging.class_overrides[addon._class]
+            local finalDriver = classDriver and classDriver ~= "" and classDriver or driver
+            if finalDriver and finalDriver ~= "" then
+                UnregisterStateDriver(MainMenuBar, "page")
+                RegisterStateDriver(MainMenuBar, "page", finalDriver)
+            end
+        end
     end
 
     function MainMenuBarMixin:statusbar_setup()

@@ -389,6 +389,19 @@ local function RestoreOriginalPage()
     originalPage = nil
 end
 
+local function ReapplyPagingDriver()
+    if InCombatLockdown() then return end
+    if addon.db and addon.db.profile and addon.db.profile.mainbars and addon.db.profile.mainbars.paging then
+        local driver = addon.db.profile.mainbars.paging.custom_state_driver
+        local classDriver = addon.db.profile.mainbars.paging.class_overrides and addon.db.profile.mainbars.paging.class_overrides[addon._class]
+        local finalDriver = classDriver and classDriver ~= "" and classDriver or driver
+        if finalDriver and finalDriver ~= "" then
+            UnregisterStateDriver(MainMenuBar, "page")
+            RegisterStateDriver(MainMenuBar, "page", finalDriver)
+        end
+    end
+end
+
 local function SetupVehicleExitButton()
     if not vehicleExit or not pUiMainBar then return end
     
@@ -619,6 +632,9 @@ local function RestoreVehicleSystem()
     
     -- Cleanup global frames
     CleanupVehicleFrames()
+    
+    RestoreOriginalPage()
+    ReapplyPagingDriver()
     
     -- Restore default vehicle UI
     if VehicleMenuBar then
