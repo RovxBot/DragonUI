@@ -117,6 +117,24 @@ local function StyleFlyout(button)
     end
     -- Resize flyout arrow for DF look
     button.FlyoutArrow:SetSize(24, 24)
+
+    -- Backdrop behind flyout
+    if button.FlyoutFrame and not button.FlyoutFrame.DragonUIBackdrop then
+        local bg = CreateFrame("Frame", nil, button.FlyoutFrame, "BackdropTemplate")
+        bg:SetFrameStrata(button.FlyoutFrame:GetFrameStrata())
+        bg:SetFrameLevel(button.FlyoutFrame:GetFrameLevel() - 1)
+        bg:SetPoint("TOPLEFT", button.FlyoutFrame, -4, 4)
+        bg:SetPoint("BOTTOMRIGHT", button.FlyoutFrame, 4, -4)
+        bg:SetBackdrop({
+            bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+            edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+            tile = true, tileSize = 16, edgeSize = 12,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        })
+        bg:SetBackdropColor(0.02, 0.02, 0.02, 0.8)
+        bg:SetBackdropBorderColor(0.1, 0.7, 1, 0.9)
+        button.FlyoutFrame.DragonUIBackdrop = bg
+    end
 end
 
 local function HookFlyoutUpdates()

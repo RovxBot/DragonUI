@@ -144,7 +144,8 @@ local defaults = {
                 openOnHover = true,
                 closeDelay = 0.1,
                 spacing = 6,
-                art = "df"
+                art = "df",
+                backdrop = true
             },
             paging = {
                 custom_state_driver = "",

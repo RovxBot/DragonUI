@@ -118,6 +118,16 @@ function addon:CreateOptionsTable()
                                 name = "Configure custom state drivers for action bars. Example: [form:1]1;[form:2]2;[bonusbar:5]11;0",
                                 order = 0
                             },
+                            reset_defaults = {
+                                type = 'execute',
+                                name = "Reset Paging Presets",
+                                func = function()
+                                    addon.db.profile.mainbars.paging.class_overrides = {}
+                                    addon.db.profile.mainbars.paging.custom_state_driver = ""
+                                    print("|cFF00FF00[DragonUI]|r Paging presets reset.")
+                                end,
+                                order = 0.2
+                            },
                             warrior = {
                                 type = 'input',
                                 name = "Warrior",
@@ -150,6 +160,83 @@ function addon:CreateOptionsTable()
                                     if addon.PositionActionBars then addon.PositionActionBars() end
                                 end,
                                 order = 0.7
+                            },
+                            priest = {
+                                type = 'input',
+                                name = "Priest",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.PRIEST or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.PRIEST = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 0.8
+                            },
+                            paladin = {
+                                type = 'input',
+                                name = "Paladin",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.PALADIN or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.PALADIN = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 0.9
+                            },
+                            hunter = {
+                                type = 'input',
+                                name = "Hunter",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.HUNTER or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.HUNTER = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 1.0
+                            },
+                            mage = {
+                                type = 'input',
+                                name = "Mage",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.MAGE or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.MAGE = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 1.1
+                            },
+                            warlock = {
+                                type = 'input',
+                                name = "Warlock",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.WARLOCK or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.WARLOCK = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 1.2
+                            },
+                            shaman = {
+                                type = 'input',
+                                name = "Shaman",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.SHAMAN or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.SHAMAN = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 1.3
+                            },
+                            deathknight = {
+                                type = 'input',
+                                name = "Death Knight",
+                                width = "full",
+                                get = function() return addon.db.profile.mainbars.paging.class_overrides.DEATHKNIGHT or "" end,
+                                set = function(_, val)
+                                    addon.db.profile.mainbars.paging.class_overrides.DEATHKNIGHT = val or ""
+                                    if addon.PositionActionBars then addon.PositionActionBars() end
+                                end,
+                                order = 1.4
                             },
                             custom_state_driver = {
                                 type = 'input',
