@@ -53,8 +53,42 @@ function EditorMode:ShowMoverGuides()
                 h:SetHeight(1)
                 h:SetBlendMode("ADD")
 
+                local l = parent:CreateTexture(nil, "OVERLAY")
+                l:SetTexture(0, 0.8, 1, 0.15)
+                l:SetPoint("LEFT", entry.frame, "LEFT", 0, 0)
+                l:SetPoint("TOP", entry.frame, "TOP", 0, 0)
+                l:SetPoint("BOTTOM", entry.frame, "BOTTOM", 0, 0)
+                l:SetWidth(1)
+                l:SetBlendMode("ADD")
+
+                local r = parent:CreateTexture(nil, "OVERLAY")
+                r:SetTexture(0, 0.8, 1, 0.15)
+                r:SetPoint("RIGHT", entry.frame, "RIGHT", 0, 0)
+                r:SetPoint("TOP", entry.frame, "TOP", 0, 0)
+                r:SetPoint("BOTTOM", entry.frame, "BOTTOM", 0, 0)
+                r:SetWidth(1)
+                r:SetBlendMode("ADD")
+
+                local t = parent:CreateTexture(nil, "OVERLAY")
+                t:SetTexture(0, 0.8, 1, 0.15)
+                t:SetPoint("TOPLEFT", entry.frame, "TOPLEFT", 0, 0)
+                t:SetPoint("TOPRIGHT", entry.frame, "TOPRIGHT", 0, 0)
+                t:SetHeight(1)
+                t:SetBlendMode("ADD")
+
+                local b = parent:CreateTexture(nil, "OVERLAY")
+                b:SetTexture(0, 0.8, 1, 0.15)
+                b:SetPoint("BOTTOMLEFT", entry.frame, "BOTTOMLEFT", 0, 0)
+                b:SetPoint("BOTTOMRIGHT", entry.frame, "BOTTOMRIGHT", 0, 0)
+                b:SetHeight(1)
+                b:SetBlendMode("ADD")
+
                 table.insert(snapLines, v)
                 table.insert(snapLines, h)
+                table.insert(snapLines, l)
+                table.insert(snapLines, r)
+                table.insert(snapLines, t)
+                table.insert(snapLines, b)
             end
         end
     end
