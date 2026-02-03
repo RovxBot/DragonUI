@@ -29,6 +29,38 @@ local function getPresetStore()
     return addon.db.profile.editmode.presets
 end
 
+-- Simple snap lines to parent anchor (or potential future guides between movers)
+function EditorMode:ShowSnapLinesToParent(parentName)
+    -- currently only vertical/horizontal guide through parent center
+    for _, line in pairs(snapLines) do line:Hide() end
+    wipe(snapLines)
+
+    local parent = _G[parentName] or UIParent
+    local cx, cy = parent:GetCenter()
+    if not cx or not cy then return end
+
+    local vert = UIParent:CreateTexture(nil, "OVERLAY")
+    vert:SetTexture(0, 0.8, 1, 0.4)
+    vert:SetPoint("TOP", UIParent, "TOP", cx - (UIParent:GetLeft() or 0), 0)
+    vert:SetPoint("BOTTOM", UIParent, "BOTTOM", cx - (UIParent:GetLeft() or 0), 0)
+    vert:SetWidth(1)
+    vert:SetBlendMode("ADD")
+
+    local horiz = UIParent:CreateTexture(nil, "OVERLAY")
+    horiz:SetTexture(0, 0.8, 1, 0.4)
+    horiz:SetPoint("LEFT", UIParent, "LEFT", 0, cy - (UIParent:GetBottom() or 0))
+    horiz:SetPoint("RIGHT", UIParent, "RIGHT", 0, cy - (UIParent:GetBottom() or 0))
+    horiz:SetHeight(1)
+    horiz:SetBlendMode("ADD")
+
+    snapLines = {vert, horiz}
+
+    C_Timer.After(0.5, function()
+        for _, line in pairs(snapLines) do line:Hide() end
+        wipe(snapLines)
+    end)
+end
+
 -- StaticPopup para reiniciar UI después de salir del modo editor
 StaticPopupDialogs["DRAGONUI_RELOAD_UI"] = {
     text = "UI elements have been repositioned. Reload UI to ensure all graphics display correctly?",
@@ -154,24 +186,25 @@ local function ensureInspectorFrame()
     f.fadeIn = UIFrameFadeIn
     f.fadeOut = UIFrameFadeOut
 
+    -- Nine-slice-esque styling using textures we have available
     f:SetBackdrop({
-        bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-        edgeFile = "Interface\\Buttons\\WHITE8X8",
-        tile = true, tileSize = 16, edgeSize = 1,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 }
+        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+        tile = true, tileSize = 16, edgeSize = 16,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
     })
-    f:SetBackdropColor(0.02, 0.04, 0.08, 0.94)
-    f:SetBackdropBorderColor(0.1, 0.55, 0.95, 0.9)
+    f:SetBackdropColor(0.05, 0.07, 0.1, 0.94)
+    f:SetBackdropBorderColor(0.2, 0.6, 1, 0.9)
 
     local titleBg = f:CreateTexture(nil, "BACKGROUND")
     titleBg:SetPoint("TOPLEFT", f, "TOPLEFT", 1, -1)
     titleBg:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1, -1)
-    titleBg:SetHeight(22)
-    titleBg:SetTexture("Interface\\BUTTONS\\WHITE8X8")
-    titleBg:SetVertexColor(0.05, 0.14, 0.24, 0.9)
+    titleBg:SetHeight(24)
+    titleBg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+    titleBg:SetTexCoord(0, 1, 0, 0.75)
 
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    title:SetPoint("CENTER", titleBg, "CENTER", 0, -1)
+    title:SetPoint("CENTER", titleBg, "CENTER", 0, -2)
     title:SetText("Frame Inspector")
     f.title = title
 
@@ -453,6 +486,8 @@ local function wireInspectorHandlers()
                 end
                 applyPosition(name, entry, pos)
                 refreshInspector(name, entry)
+                -- show transient snap lines to this helper parent if it is another mover
+                EditorMode:ShowSnapLinesToParent(pos.anchorParent)
             end)
         end
     end
@@ -844,13 +879,13 @@ end
 
 function EditorMode:Hide(showReloadPopup)
     if gridOverlay then
-        UIFrameFadeOut(gridOverlay, 0.1, gridOverlay:GetAlpha(), 0)
+        UIFrameFadeOut(gridOverlay, 0.08, gridOverlay:GetAlpha(), 0)
     end
     if exitEditorButton then exitEditorButton:Hide() end
     if resetAllButton then resetAllButton:Hide() end
     if inspectorFrame then UIFrameFadeOut(inspectorFrame, 0.1, inspectorFrame:GetAlpha(), 0) end
     if activeHighlight then
-        UIFrameFadeOut(activeHighlight, 0.1, activeHighlight:GetAlpha(), 0)
+        UIFrameFadeOut(activeHighlight, 0.08, activeHighlight:GetAlpha(), 0)
     end
     if keyCatcher then keyCatcher:Hide() end
     activeMover = nil
@@ -912,7 +947,7 @@ function EditorMode:SetActiveMover(frame)
                 activeHighlight.text:SetPoint("TOP", activeHighlight, "BOTTOM", 0, -2)
             end
             activeHighlight.text:SetText(name or "")
-            activeHighlight:SetBackdrop({ edgeFile = "Interface\\Buttons\\WHITE8X8", edgeSize = 2 })
+            activeHighlight:SetBackdrop({ edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border", edgeSize = 14 })
             activeHighlight:SetBackdropBorderColor(0.1, 0.8, 1, 0.9)
             UIFrameFadeIn(activeHighlight, 0.08, activeHighlight:GetAlpha(), 0.6)
         end
@@ -1106,3 +1141,4 @@ local function refreshPresetDropdown()
         end
     end)
 end
+local snapLines = {}
