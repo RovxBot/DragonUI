@@ -81,11 +81,29 @@ local function ApplyButtonVisuals(button)
     local assets = addon.config.assets
     if assets and assets.highlight then
         button:SetHighlightTexture(assets.highlight)
+        local ht = button:GetHighlightTexture()
+        if ht then ht:SetBlendMode("ADD") end
     end
     if assets and assets.normal then
         local nt = button:GetNormalTexture()
         if nt then
             nt:SetTexture(assets.normal)
+        end
+    end
+
+    -- Pushed/checked states: reuse highlight with tint
+    if assets and assets.highlight then
+        button:SetPushedTexture(assets.highlight)
+        local pt = button:GetPushedTexture()
+        if pt then
+            pt:SetVertexColor(0.7, 0.7, 0.7, 0.8)
+            pt:SetBlendMode("ADD")
+        end
+        button:SetCheckedTexture(assets.highlight)
+        local ct = button:GetCheckedTexture()
+        if ct then
+            ct:SetVertexColor(0.1, 0.7, 1, 0.6)
+            ct:SetBlendMode("ADD")
         end
     end
 end
@@ -161,6 +179,27 @@ function addon.actionbuttons_grid()
 
     HookFlyoutUpdates()
 end
+
+-- ============================================================================
+-- STATE HOOKS (hover/press feedback)
+-- ============================================================================
+
+local function UpdateButtonState(button)
+    if not button then return end
+    if button:GetButtonState() == "PUSHED" then
+        button:SetAlpha(0.95)
+    else
+        button:SetAlpha(1)
+    end
+end
+
+local function HookButtonStates()
+    if ButtonsModule.stateHooked then return end
+    ButtonsModule.stateHooked = true
+    hooksecurefunc("ActionButton_UpdateState", UpdateButtonState)
+end
+
+HookButtonStates()
 
 local function is_petaction(self, name)
 	local spec = self:GetName():match(name)
