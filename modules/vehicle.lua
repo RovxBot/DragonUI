@@ -544,7 +544,7 @@ local function SetupVehicleExitStateDriver()
 end
 local function ApplyVehicleSystem()
     if VehicleModule.applied or not IsModuleEnabled() then return end
-    
+
     -- Check dependencies
     if not CheckDependencies() then
         return
